@@ -7,7 +7,7 @@ against the checksums in `bench/datasets/CHECKSUMS.txt`:
 ```bash
 python -m tools.fetch_datasets
 python -m bench.run_bench                       # BR1..BR7, default config
-python -m bench.run_bench --configs baseline layer contact --limit 25
+python -m bench.run_bench --configs default dbl contact --limit 25
 ```
 
 `utilisation` is placed volume over container volume, the measure the CLP
@@ -88,6 +88,52 @@ heuristic lands somewhere reasonable.
 instances). Published results usually do not enforce it, so any comparison has
 to say whether it was on. All headline figures above have it **off**, matching
 the benchmark convention.
+
+## F4: constraints cost nothing here, and that is the point
+
+Adding stacking limits, delivery reach and load balancing left the benchmark
+mean unchanged at **82.1%** on the same 175 instances. That is not the
+constraints being free — it is these instances not exercising them. BR boxes
+carry no stacking rating, every instance is single-drop, and translating a
+block along the container cannot change how much of it fits.
+
+Where the constraints bite is on freight that has the properties BR does not
+model. On the synthetic three-drop container job:
+
+| | Utilisation | K5 | K8 |
+|---|---|---|---|
+| F3 solver | 71.6% | 7 violations | 260 violations |
+| F4 solver | 64.2% | 0 | 0 |
+
+**Reach costs 7 points of utilisation on that job.** Packing the last stop
+deepest forbids using a gap in the wrong region, so fewer boxes fit. A version
+of this that cost nothing would mean the constraint was not being applied — a
+test asserts the drop is there.
+
+## Lateral balance: a negative result
+
+Lengthwise balance is solved. Translating the finished block centres the
+centre of gravity whenever the load is shorter than the vehicle, which it
+almost always is, and it cannot break anything because every relative position
+is preserved.
+
+Sideways it does not work, because a load usually spans the full width and
+there is nowhere to slide. So the side has to be chosen during packing. Two
+rules were tried on the four demo jobs:
+
+| Rule | Result |
+|---|---|
+| Prefer the light side whenever the load leans | Disturbs already-centred loads; one job went from 0 mm to −1 mm but lost 2.6 points of volume |
+| Prefer it only past half tolerance, and pick the side that measures better | Fixes one job (−157 → −1 mm), worsens another (−28 → −129 mm), no effect on two |
+
+The second rule is the better one and still not good enough: a greedy choice
+cannot see that a locally better side forces later boxes to a worse one. So
+`balance_lateral` ships **off**, `K7` sideways stays an open violation on two
+of the four demo jobs, and the fix belongs to the F5 search, which optimises
+the finished load rather than each box in turn.
+
+Recording this as a result rather than deleting the code: the next person to
+reach for a greedy lateral rule should be able to see it was tried.
 
 ## Source data defect
 

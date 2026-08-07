@@ -44,10 +44,18 @@ class ExtremePoints:
         self._points = kept
         return removed
 
-    def ordered(self, order: str = "dbl", limit: int | None = None) -> list[Pos]:
-        """Candidates ranked by the chosen strategy, best first."""
+    def ordered(
+        self, order: str = "dbl", limit: int | None = None, mirror_y: bool = False
+    ) -> list[Pos]:
+        """Candidates ranked by the chosen strategy, best first.
+
+        ``mirror_y`` reverses the left-to-right preference. Without it the pool
+        always offers the left of the vehicle first and the load ends up
+        left-heavy; the solver flips it whenever the load leans.
+        """
+        table = MIRRORED_POINT_ORDERS if mirror_y else POINT_ORDERS
         try:
-            key = POINT_ORDERS[order]
+            key = table[order]
         except KeyError:
             raise KeyError(
                 f"unknown point order {order!r}; have {sorted(POINT_ORDERS)}"
@@ -64,5 +72,12 @@ class ExtremePoints:
 POINT_ORDERS = {
     "dbl": lambda p: (p[0], p[1], p[2]),
     "layer": lambda p: (p[2], p[0], p[1]),
+}
+
+#: The same orders with the left-to-right preference reversed. Written out
+#: rather than derived, because which slot holds y differs per order.
+MIRRORED_POINT_ORDERS = {
+    "dbl": lambda p: (p[0], -p[1], p[2]),
+    "layer": lambda p: (p[2], p[0], -p[1]),
 }
 

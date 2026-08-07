@@ -31,13 +31,17 @@ BENCH_CHECKS = ("K1", "K2", "K3", "K6")
 
 #: Named runs. ``support`` carries the 70% resting rule that most published
 #: results do not apply -- kept separate so the comparison stays honest.
+#: Names describe what differs from the shipped defaults; ``default`` is
+#: whatever SolverConfig currently is, so it tracks the library rather than
+#: freezing a copy of it.
 CONFIGS: dict[str, tuple[SolverConfig, float]] = {
-    "baseline": (SolverConfig(), 0.0),
-    "layer": (SolverConfig(scorer="layer"), 0.0),
+    "default": (SolverConfig(), 0.0),
+    "dbl": (SolverConfig(scorer="dbl"), 0.0),
     "contact": (SolverConfig(scorer="contact", search="best_fit"), 0.0),
     "best_fit": (SolverConfig(search="best_fit"), 0.0),
     "area_order": (SolverConfig(item_order="base_area_desc"), 0.0),
     "support": (SolverConfig(), 0.70),
+    "balanced": (SolverConfig(balance_lateral=True), 0.0),
 }
 
 
@@ -127,7 +131,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Benchmark the LoadZa solver")
     parser.add_argument("--sets", nargs="+", default=[f"BR{n}" for n in range(1, 8)],
                         choices=sorted(SETS))
-    parser.add_argument("--configs", nargs="+", default=["baseline"],
+    parser.add_argument("--configs", nargs="+", default=["default"],
                         choices=sorted(CONFIGS))
     parser.add_argument("--limit", type=int, default=None,
                         help="use only the first N instances of each set")

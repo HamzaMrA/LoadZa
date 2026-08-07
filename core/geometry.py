@@ -166,6 +166,26 @@ class SpatialIndex:
             return b
         return (x0, y0, rest, x1, y1, rest + (z1 - z0))
 
+    def supporters(self, b: Box) -> list[tuple[int, int]]:
+        """Boxes whose top face carries this one, with the contact area each.
+
+        Empty for a box on the floor, and empty for one hanging in mid-air --
+        the caller distinguishes those by ``b[2] == 0``.
+        """
+        if b[2] == 0:
+            return []
+        probe = (b[0], b[1], max(b[2] - 1, 0), b[3], b[4], b[2] + 1)
+        found = []
+        boxes = self._boxes
+        for i in self.nearby(probe):
+            other = boxes[i]
+            if other[5] != b[2]:
+                continue
+            area = overlap_area_xy(b, other)
+            if area > 0:
+                found.append((i, area))
+        return found
+
     def support_ratio(self, b: Box) -> float:
         """Fraction of the box footprint resting on the floor or other boxes."""
         if b[2] == 0:
@@ -173,14 +193,7 @@ class SpatialIndex:
         area = (b[3] - b[0]) * (b[4] - b[1])
         if area == 0:
             return 0.0
-        probe = (b[0], b[1], max(b[2] - 1, 0), b[3], b[4], b[2] + 1)
-        supported = 0
-        boxes = self._boxes
-        for i in self.nearby(probe):
-            other = boxes[i]
-            if other[5] == b[2]:
-                supported += overlap_area_xy(b, other)
-        return supported / area
+        return sum(a for _, a in self.supporters(b)) / area
 
     def contact_area(self, b: Box, inner: Dims) -> int:
         """Total area of faces touching a wall, the floor or another box.

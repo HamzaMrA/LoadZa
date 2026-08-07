@@ -102,19 +102,33 @@ def test_loading_sequence_runs_from_the_deep_end_outwards():
     assert xs == sorted(xs), "sequence must not jump back towards the doors"
 
 
-def test_a_single_box_lands_in_the_deep_left_bottom_corner():
+def single_box_job() -> Job:
     box_type = ItemType(
         sku="ONE", name="one", dims=Dims(1000, 900, 800), weight_g=10_000
     )
-    job = Job(
+    return Job(
         job_id="single",
         vehicle=catalog.vehicle("CNT-20DV"),
         items=(Item(uid=0, type=box_type),),
     )
-    plan = solve(job)
+
+
+def test_a_single_box_packs_into_the_deep_left_bottom_corner():
+    plan = solve(single_box_job(), SolverConfig(rebalance=False))
     assert len(plan.placements) == 1
     placement = plan.placements[0]
     assert (placement.pos.x, placement.pos.y, placement.pos.z) == (0, 0, 0)
+
+
+def test_rebalancing_slides_a_single_box_to_the_middle_of_the_floor():
+    """The corner is where packing starts, not where the load should sit."""
+    job = single_box_job()
+    placement = solve(job).placements[0]
+    inner = job.vehicle.inner
+
+    assert placement.pos.z == 0, "sliding must not lift anything off the floor"
+    assert abs((placement.pos.x + placement.dims.l / 2) - inner.l / 2) <= 1
+    assert abs((placement.pos.y + placement.dims.w / 2) - inner.w / 2) <= 1
 
 
 def test_oversized_item_is_reported_not_dropped():

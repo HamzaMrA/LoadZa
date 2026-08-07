@@ -9,8 +9,8 @@ constrained 3D bin packing problem. It is NP-hard: there is no practical exact
 solver, so LoadZa combines a constructive heuristic with a metaheuristic
 improvement pass and measures the result against published benchmark data.
 
-> Status: **F3 complete** — solver, independent validator, schematic renderer
-> and a benchmark harness over the published OR-Library instances.
+> Status: **F4 complete** — the solver now enforces stacking limits, delivery
+> reach and lengthwise balance as constraints, not just as audit findings.
 > **82.1% mean volume utilisation across all 700 BR1–BR7 instances, 0 invalid
 > plans.** Full numbers in [docs/BENCHMARKS.md](docs/BENCHMARKS.md).
 
@@ -49,17 +49,34 @@ solver — it recomputes overlap, support and load transfer from the placement
 coordinates with plain nested loops. A shared helper would let one bug pass
 both the solver and its own audit.
 
-What the solver currently guarantees, and what it does not:
+What the solver guarantees, and what it does not:
 
 | | K1 | K2 | K3 | K4 | K5 | K6 | K7 | K8 |
 |---|---|---|---|---|---|---|---|---|
-| enforced by the solver | ✓ | ✓ | ✓ | ✓ | | ✓ | | |
+| enforced by the solver | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | part | ✓ |
 | checked by the validator | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 
-The gaps are real and visible in the output: a three-stop job reports 256 K8
-violations because nothing orders the load by delivery stop yet, and fragile
-crates get crushed because K5 is not a placement constraint until F4. Those
-counts are the specification for the next phase.
+The constraints are handled by three different mechanisms, because they are
+three different kinds of thing:
+
+- **Local** — K1, K2, K3, K4, K6 are decided by looking at one candidate
+  position, so they are filters inside the placement loop.
+- **Cumulative** — K5 and K8 depend on what is already loaded. The solver
+  carries a running load figure per box, pushed down the support tree in
+  proportion to contact area, and packs delivery stops in reverse order so the
+  first drop finishes nearest the doors.
+- **Global** — K7 is a property of the finished load; no greedy filter can
+  enforce it. The whole packed block is translated along the vehicle
+  afterwards, which moves the centre of gravity without disturbing a single
+  relative position.
+
+**K7 is only half solved, and deliberately so.** Translation fixes the
+lengthwise balance whenever there is free length, which in practice is always.
+Sideways there is usually no free width, so the residual lean has to be
+decided during packing — and a greedy side-choice rule measurably makes some
+loads worse while fixing others. `balance_lateral` exists, defaults off, and
+the honest result is written up in [docs/BENCHMARKS.md](docs/BENCHMARKS.md).
+Lateral balance is a job for the F5 global search.
 
 ## Layout
 
@@ -115,12 +132,11 @@ python -m bench.run_bench --limit 10
 pytest
 ```
 
-![Side and top view of a solved trailer load](docs/TIR-1360-mixed-s42-layer-first_fit.png)
+![Side and top view of a three-stop container load](docs/CNT-40DV-3stop-s77-layer-first_fit.png)
 
-The header line is the validator's, not the solver's. `K5 x5` says five fragile
-crates are carrying weight they are rated for none of — a real defect, visible
-in a plan that is otherwise legal. A checker that only answered "valid" or
-"invalid" would not have told anyone that.
+A three-drop load, coloured by delivery stop. The last stop is packed deepest
+and the first finishes at the doors, so nothing has to be unloaded twice. The
+header line is the validator's verdict, not the solver's own.
 
 Available vehicles: `TIR-1360` (13.6 m curtainside semi-trailer), `CNT-20DV`,
 `CNT-40DV`, `CNT-40HC` (20 ft / 40 ft / 40 ft high cube containers).
@@ -146,8 +162,8 @@ data. Nothing needs a network after that first fetch.
 | F1 | Extreme-point placement heuristic, CLI solver | done |
 | F2 | Independent validator, property tests, schematic renderer | done |
 | F3 | Benchmark harness over BR1–BR7, LN and the small set | done |
-| F4 | Remaining realism constraints (K5, K7, K8) | next |
-| F5 | Simulated annealing improvement pass | |
+| F4 | Stacking limits, delivery reach, load balancing | done |
+| F5 | Simulated annealing improvement pass | next |
 | F6 | FastAPI service, SQLite persistence | |
 | F7 | React + three.js viewer with load-order animation | |
 

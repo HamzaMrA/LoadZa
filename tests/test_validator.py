@@ -292,38 +292,61 @@ def test_solver_output_satisfies_the_constraints_it_claims(vehicle_code, mix, fi
     assert report.is_valid, report.summary()
 
 
-def test_known_gap_the_load_is_not_balanced():
-    """K5, K7 and K8 are not solver constraints until F4.
-
-    These assertions are inverted on purpose: they claim the gaps still exist,
-    so that closing one fails here and points at the right file. The pallet job
-    is used because it stays unbalanced under either scorer -- see
-    test_scorer_choice_trades_one_constraint_for_another.
-    """
-    job = generate(vehicle_code="CNT-40HC", mix="pallets", fill=1.10, seed=7)
-    assert not validate(job, solve(job), checks=("K7",)).is_valid
-
-
-def test_known_gap_fragile_boxes_still_get_crushed_and_stops_interleave():
-    job = generate(vehicle_code="CNT-40DV", mix="mixed", fill=0.85, stops=3, seed=77)
+@pytest.mark.parametrize(
+    "vehicle_code,mix,fill,stops,seed",
+    [
+        ("CNT-40DV", "mixed", 0.85, 3, 77),
+        ("TIR-1360", "mixed", 1.05, 1, 42),
+        ("CNT-40HC", "pallets", 1.10, 2, 7),
+    ],
+)
+def test_stacking_and_reach_are_enforced(vehicle_code, mix, fill, stops, seed):
+    """K5 and K8 are solver constraints from F4 on, not just audit findings."""
+    job = generate(vehicle_code=vehicle_code, mix=mix, fill=fill, stops=stops, seed=seed)
     report = validate(job, solve(job), checks=("K5", "K8"))
+    assert report.is_valid, report.summary()
+
+
+def test_enforcement_can_be_switched_off_and_the_violations_come_back():
+    """Guards against the checks passing because nothing exercises them."""
+    job = generate(vehicle_code="CNT-40DV", mix="mixed", fill=0.85, stops=3, seed=77)
+    loose = SolverConfig(enforce_stacking=False, enforce_lifo=False)
+    report = validate(job, solve(job, loose), checks=("K5", "K8"))
     assert report.counts["K5"] > 0
     assert report.counts["K8"] > 0
 
 
-def test_scorer_choice_trades_one_constraint_for_another():
-    """Layer-first spreads the load lengthwise but stacks higher.
+def test_lifo_costs_utilisation():
+    """Reach is a real constraint, and real constraints are not free.
 
-    On the mixed trailer job it fixes the centre of gravity -- 1894 mm off
-    centre with ``dbl``, inside tolerance with ``layer`` -- and in exchange
-    starts resting weight on fragile crates. Neither scorer is safe on its own;
-    F4 has to enforce K5 and K7 directly rather than hope a heuristic lands
-    somewhere reasonable.
+    Packing the last stop deepest forbids using a gap in the wrong region, so
+    the plan holds fewer boxes. A version of this that cost nothing would mean
+    the constraint was not being applied.
     """
-    job = generate(vehicle_code="TIR-1360", mix="mixed", fill=1.05, seed=42)
+    job = generate(vehicle_code="CNT-40DV", mix="mixed", fill=0.85, stops=3, seed=77)
+    strict = solve(job).metrics.volume_utilization
+    loose = solve(job, SolverConfig(enforce_lifo=False)).metrics.volume_utilization
+    assert strict < loose
 
-    deep = validate(job, solve(job, SolverConfig(scorer="dbl")), checks=("K5", "K7"))
-    layered = validate(job, solve(job, SolverConfig(scorer="layer")), checks=("K5", "K7"))
 
-    assert deep.counts["K7"] > 0 and deep.counts["K5"] == 0
-    assert layered.counts["K7"] == 0 and layered.counts["K5"] > 0
+def test_longitudinal_balance_is_solved_but_lateral_is_not():
+    """Sliding the load centres it lengthwise; sideways it cannot help.
+
+    A block translated along the vehicle keeps every relative position, so the
+    lengthwise centre of gravity can always be corrected while there is free
+    length. Sideways there usually is none -- the load spans the full width --
+    so the residual lean has to be fixed by choosing sides during packing, and
+    a greedy rule does that badly. Hence balance_lateral defaults off and the
+    job below still leans.
+    """
+    job = generate(vehicle_code="CNT-40HC", mix="pallets", fill=1.10, seed=7)
+    plan = solve(job)
+    vehicle = job.vehicle
+
+    assert abs(plan.metrics.cog_longitudinal_mm) <= (
+        vehicle.cog_long_tol_ratio * vehicle.inner.l
+    )
+    assert abs(plan.metrics.cog_lateral_mm) > vehicle.cog_lateral_tol_mm
+
+    for violation in validate(job, plan, checks=("K7",)).violations:
+        assert "sideways" in violation.detail
