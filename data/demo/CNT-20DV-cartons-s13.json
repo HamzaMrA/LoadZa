@@ -1,0 +1,99 @@
+{
+  "job_id": "CNT-20DV-cartons-s13",
+  "vehicle": {
+    "code": "CNT-20DV",
+    "name": "20 ft dry van container",
+    "inner_mm": {
+      "length": 5898,
+      "width": 2352,
+      "height": 2393
+    },
+    "max_payload_g": 28230000,
+    "access": "rear",
+    "cog_lateral_tol_mm": 100,
+    "cog_long_tol_ratio": 0.1,
+    "min_support_ratio": 0.7
+  },
+  "item_types": [
+    {
+      "sku": "BOX-M",
+      "name": "Medium carton",
+      "dims_mm": {
+        "length": 600,
+        "width": 400,
+        "height": 400
+      },
+      "weight_g": 18000,
+      "fragile": false,
+      "max_stack_weight_g": 120000,
+      "allowed_orientations": [
+        "LWH",
+        "WLH",
+        "LHW",
+        "HLW",
+        "WHL",
+        "HWL"
+      ],
+      "this_side_up": false
+    },
+    {
+      "sku": "BOX-S",
+      "name": "Small carton",
+      "dims_mm": {
+        "length": 400,
+        "width": 300,
+        "height": 300
+      },
+      "weight_g": 7000,
+      "fragile": false,
+      "max_stack_weight_g": 90000,
+      "allowed_orientations": [
+        "LWH",
+        "WLH",
+        "LHW",
+        "HLW",
+        "WHL",
+        "HWL"
+      ],
+      "this_side_up": false
+    },
+    {
+      "sku": "BOX-L",
+      "name": "Large carton",
+      "dims_mm": {
+        "length": 800,
+        "width": 600,
+        "height": 600
+      },
+      "weight_g": 45000,
+      "fragile": false,
+      "max_stack_weight_g": 180000,
+      "allowed_orientations": [
+        "LWH",
+        "WLH",
+        "LHW",
+        "HLW",
+        "WHL",
+        "HWL"
+      ],
+      "this_side_up": false
+    }
+  ],
+  "items": [
+    {
+      "sku": "BOX-M",
+      "qty": 96,
+      "stop": 1
+    },
+    {
+      "sku": "BOX-S",
+      "qty": 75,
+      "stop": 1
+    },
+    {
+      "sku": "BOX-L",
+      "qty": 63,
+      "stop": 1
+    }
+  ]
+}

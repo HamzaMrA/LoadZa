@@ -1,0 +1,209 @@
+{
+  "job_id": "TIR-1360-mixed-s42",
+  "vehicle": {
+    "code": "TIR-1360",
+    "name": "13.60 m curtainside semi-trailer",
+    "inner_mm": {
+      "length": 13600,
+      "width": 2480,
+      "height": 2700
+    },
+    "max_payload_g": 24000000,
+    "access": "side",
+    "cog_lateral_tol_mm": 100,
+    "cog_long_tol_ratio": 0.1,
+    "min_support_ratio": 0.7
+  },
+  "item_types": [
+    {
+      "sku": "BOX-M",
+      "name": "Medium carton",
+      "dims_mm": {
+        "length": 600,
+        "width": 400,
+        "height": 400
+      },
+      "weight_g": 18000,
+      "fragile": false,
+      "max_stack_weight_g": 120000,
+      "allowed_orientations": [
+        "LWH",
+        "WLH",
+        "LHW",
+        "HLW",
+        "WHL",
+        "HWL"
+      ],
+      "this_side_up": false
+    },
+    {
+      "sku": "EUR-FULL",
+      "name": "Euro pallet, full height",
+      "dims_mm": {
+        "length": 1200,
+        "width": 800,
+        "height": 1450
+      },
+      "weight_g": 620000,
+      "fragile": false,
+      "max_stack_weight_g": 600000,
+      "allowed_orientations": [
+        "LWH",
+        "WLH"
+      ],
+      "this_side_up": true
+    },
+    {
+      "sku": "EUR-HALF",
+      "name": "Euro pallet, half height",
+      "dims_mm": {
+        "length": 1200,
+        "width": 800,
+        "height": 750
+      },
+      "weight_g": 310000,
+      "fragile": false,
+      "max_stack_weight_g": 900000,
+      "allowed_orientations": [
+        "LWH",
+        "WLH"
+      ],
+      "this_side_up": true
+    },
+    {
+      "sku": "BOX-S",
+      "name": "Small carton",
+      "dims_mm": {
+        "length": 400,
+        "width": 300,
+        "height": 300
+      },
+      "weight_g": 7000,
+      "fragile": false,
+      "max_stack_weight_g": 90000,
+      "allowed_orientations": [
+        "LWH",
+        "WLH",
+        "LHW",
+        "HLW",
+        "WHL",
+        "HWL"
+      ],
+      "this_side_up": false
+    },
+    {
+      "sku": "DRUM-200L",
+      "name": "200 L steel drum",
+      "dims_mm": {
+        "length": 600,
+        "width": 600,
+        "height": 880
+      },
+      "weight_g": 210000,
+      "fragile": false,
+      "max_stack_weight_g": 420000,
+      "allowed_orientations": [
+        "LWH",
+        "WLH"
+      ],
+      "this_side_up": true
+    },
+    {
+      "sku": "BOX-L",
+      "name": "Large carton",
+      "dims_mm": {
+        "length": 800,
+        "width": 600,
+        "height": 600
+      },
+      "weight_g": 45000,
+      "fragile": false,
+      "max_stack_weight_g": 180000,
+      "allowed_orientations": [
+        "LWH",
+        "WLH",
+        "LHW",
+        "HLW",
+        "WHL",
+        "HWL"
+      ],
+      "this_side_up": false
+    },
+    {
+      "sku": "CRATE-FRAGILE",
+      "name": "Fragile glass crate",
+      "dims_mm": {
+        "length": 1150,
+        "width": 750,
+        "height": 1100
+      },
+      "weight_g": 340000,
+      "fragile": true,
+      "max_stack_weight_g": 0,
+      "allowed_orientations": [
+        "LWH",
+        "WLH"
+      ],
+      "this_side_up": true
+    },
+    {
+      "sku": "IND-FULL",
+      "name": "Industrial pallet, full height",
+      "dims_mm": {
+        "length": 1200,
+        "width": 1000,
+        "height": 1450
+      },
+      "weight_g": 780000,
+      "fragile": false,
+      "max_stack_weight_g": 700000,
+      "allowed_orientations": [
+        "LWH",
+        "WLH"
+      ],
+      "this_side_up": true
+    }
+  ],
+  "items": [
+    {
+      "sku": "BOX-M",
+      "qty": 26,
+      "stop": 1
+    },
+    {
+      "sku": "EUR-FULL",
+      "qty": 17,
+      "stop": 1
+    },
+    {
+      "sku": "EUR-HALF",
+      "qty": 17,
+      "stop": 1
+    },
+    {
+      "sku": "BOX-S",
+      "qty": 16,
+      "stop": 1
+    },
+    {
+      "sku": "DRUM-200L",
+      "qty": 5,
+      "stop": 1
+    },
+    {
+      "sku": "BOX-L",
+      "qty": 12,
+      "stop": 1
+    },
+    {
+      "sku": "CRATE-FRAGILE",
+      "qty": 5,
+      "stop": 1
+    },
+    {
+      "sku": "IND-FULL",
+      "qty": 4,
+      "stop": 1
+    }
+  ]
+}

@@ -1,0 +1,109 @@
+{
+  "job_id": "CNT-40HC-pallets-s7",
+  "vehicle": {
+    "code": "CNT-40HC",
+    "name": "40 ft high cube container",
+    "inner_mm": {
+      "length": 12032,
+      "width": 2352,
+      "height": 2698
+    },
+    "max_payload_g": 26580000,
+    "access": "rear",
+    "cog_lateral_tol_mm": 100,
+    "cog_long_tol_ratio": 0.1,
+    "min_support_ratio": 0.7
+  },
+  "item_types": [
+    {
+      "sku": "EUR-FULL",
+      "name": "Euro pallet, full height",
+      "dims_mm": {
+        "length": 1200,
+        "width": 800,
+        "height": 1450
+      },
+      "weight_g": 620000,
+      "fragile": false,
+      "max_stack_weight_g": 600000,
+      "allowed_orientations": [
+        "LWH",
+        "WLH"
+      ],
+      "this_side_up": true
+    },
+    {
+      "sku": "EUR-HALF",
+      "name": "Euro pallet, half height",
+      "dims_mm": {
+        "length": 1200,
+        "width": 800,
+        "height": 750
+      },
+      "weight_g": 310000,
+      "fragile": false,
+      "max_stack_weight_g": 900000,
+      "allowed_orientations": [
+        "LWH",
+        "WLH"
+      ],
+      "this_side_up": true
+    },
+    {
+      "sku": "IND-FULL",
+      "name": "Industrial pallet, full height",
+      "dims_mm": {
+        "length": 1200,
+        "width": 1000,
+        "height": 1450
+      },
+      "weight_g": 780000,
+      "fragile": false,
+      "max_stack_weight_g": 700000,
+      "allowed_orientations": [
+        "LWH",
+        "WLH"
+      ],
+      "this_side_up": true
+    },
+    {
+      "sku": "DRUM-200L",
+      "name": "200 L steel drum",
+      "dims_mm": {
+        "length": 600,
+        "width": 600,
+        "height": 880
+      },
+      "weight_g": 210000,
+      "fragile": false,
+      "max_stack_weight_g": 420000,
+      "allowed_orientations": [
+        "LWH",
+        "WLH"
+      ],
+      "this_side_up": true
+    }
+  ],
+  "items": [
+    {
+      "sku": "EUR-FULL",
+      "qty": 28,
+      "stop": 1
+    },
+    {
+      "sku": "EUR-HALF",
+      "qty": 13,
+      "stop": 1
+    },
+    {
+      "sku": "IND-FULL",
+      "qty": 4,
+      "stop": 1
+    },
+    {
+      "sku": "DRUM-200L",
+      "qty": 3,
+      "stop": 1
+    }
+  ]
+}

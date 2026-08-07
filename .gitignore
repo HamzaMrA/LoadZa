@@ -1,0 +1,23 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.hypothesis/
+.venv/
+venv/
+*.egg-info/
+build/
+dist/
+
+# generated plans and benchmark output; demo *jobs* are committed
+data/plans/
+bench/results/
+*.sqlite
+*.db
+
+# frontend (F7)
+node_modules/
+web/dist/
+
+.vscode/
+.idea/
+.DS_Store
