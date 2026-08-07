@@ -197,6 +197,32 @@ The same plan as a printable schematic, from `python -m tools.view`:
 
 ![Side and top view of a three-stop container load](docs/CNT-40DV-3stop-s77-layer-first_fit.png)
 
+## More cargo than one vehicle
+
+```bash
+python -m tools.fleet data/demo/FLEET-DEMO.json --fleet CNT-20DV CNT-40HC TIR-1360
+```
+
+```
+trip  vehicle       boxes   volume  payload    weight
+1     TIR-1360        135    63.3%    89.5%    21.49t
+2     CNT-20DV          9    36.5%    18.9%     5.33t
+total 2               144    70.0%             26.81t
+```
+
+Fill a vehicle with the ordinary solver, take what it left behind, start the
+next one. Greedy and not optimal — but every trip is a real solve, so each one
+obeys the same constraints and answers to the same validator. A cleverer split
+that reasoned about volumes without packing would produce numbers nobody could
+load.
+
+**Vehicle choice is by volume loaded, not by utilisation.** Picking the better
+percentage sends three 20 ft containers at 75% each; picking the larger load
+sends one trailer and a container. Utilisation is a ratio and a ratio always
+flatters the smallest vehicle — fewer vehicles is what the dispatcher pays for.
+`POST /jobs/{id}/assign` stores each trip as a job of its own, so the viewer,
+the reports and the validator all work on them with no new code.
+
 ## Paperwork
 
 ```bash
@@ -244,7 +270,8 @@ data. Nothing needs a network after that first fetch.
 | F6 | FastAPI service, SQLite persistence | done |
 | F7 | React + three.js viewer with load-order animation | done |
 | F8 | Printable loading plan (PDF) and item list (Excel) | done |
-| F9 | Multi-vehicle assignment | next |
+| F9 | Multi-vehicle assignment | done |
+| F10 | Docker, demo recording, final packaging | next |
 
 ## Results
 

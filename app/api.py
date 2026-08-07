@@ -23,6 +23,7 @@ from fastapi.responses import JSONResponse
 
 from app.db import NotFound, Store
 from app.schemas import (
+    AssignRequest,
     JobSummary,
     PlanSummary,
     SolveRequest,
@@ -31,6 +32,7 @@ from app.schemas import (
     ViolationOut,
 )
 from core import __version__, catalog
+from core.fleet import assign
 from core.improve_sa import AnnealConfig, improve
 from core.io import (
     item_type_to_dict,
@@ -40,6 +42,7 @@ from core.io import (
     plan_to_dict,
     vehicle_to_dict,
 )
+from core.models import Job
 from core.solver_ep import ITEM_ORDERS, SCORERS, SolverConfig, solve
 from core.validator import ALL_CHECKS, validate
 
@@ -167,6 +170,75 @@ def solve_job(
             "solve_ms": plan.metrics.solve_ms,
         }
     return summary
+
+
+@app.post("/jobs/{job_id}/assign")
+def assign_fleet(
+    job_id: str, request: AssignRequest, store: Store = Depends(get_store)
+) -> dict[str, Any]:
+    """Split a job across vehicles, storing each trip as its own job and plan.
+
+    Trips are stored rather than only returned, so they show up in the job list
+    and every viewer, report and validator endpoint works on them unchanged.
+    """
+    try:
+        job = store.load_job(job_id)
+    except NotFound as error:
+        raise HTTPException(404, str(error)) from error
+
+    try:
+        fleet = (
+            tuple(catalog.vehicle(code) for code in request.fleet)
+            if request.fleet
+            else None
+        )
+    except KeyError as error:
+        raise HTTPException(422, str(error)) from error
+
+    result = assign(
+        job,
+        fleet=fleet,
+        config=SolverConfig(scorer=request.scorer, search=request.search),
+        max_trips=request.max_trips,
+    )
+
+    trips = []
+    for trip in result.trips:
+        loaded = {p.item_uid for p in trip.plan.placements}
+        sub_job = Job(
+            job_id=trip.plan.job_id,
+            vehicle=trip.vehicle,
+            items=tuple(item for item in job.items if item.uid in loaded),
+        )
+        store.save_job(sub_job, note=f"trip {trip.index} of {job_id}")
+
+        report = validate(sub_job, trip.plan)
+        plan = trip.plan
+        if plan.metrics is not None:
+            plan = replace(plan, metrics=replace(plan.metrics, violations=report.counts))
+        store.save_plan(plan)
+
+        trips.append({
+            "index": trip.index,
+            "job_id": sub_job.job_id,
+            "plan_id": plan.plan_id,
+            "vehicle_code": trip.vehicle.code,
+            "boxes": len(plan.placements),
+            "volume_utilization": trip.volume_utilization,
+            "violations": report.counts,
+        })
+
+    return {
+        "job_id": job_id,
+        "vehicles_used": result.vehicles_used,
+        "placed": result.placed,
+        "stranded": [
+            {"item_uid": item.uid, "sku": item.sku} for item in result.stranded
+        ],
+        "mean_utilization": result.mean_utilization,
+        "solve_ms": result.solve_ms,
+        "trips": trips,
+    }
 
 
 @app.get("/jobs/{job_id}/plans", response_model=list[PlanSummary])

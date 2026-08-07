@@ -39,6 +39,20 @@ class SolveRequest(BaseModel):
     )
 
 
+class AssignRequest(BaseModel):
+    """Which vehicles may be used, and how many trips are acceptable."""
+
+    fleet: list[str] | None = Field(
+        default=None,
+        description="Vehicle codes. Omitted means the job's own vehicle.",
+    )
+    scorer: str = Field(default="layer", examples=sorted(SCORERS))
+    search: str = Field(default="first_fit", pattern="^(first_fit|best_fit)$")
+    #: A run that needs more trips than this is reporting a mistake in the
+    #: order, not planning a convoy.
+    max_trips: int = Field(default=10, ge=1, le=50)
+
+
 class JobSummary(BaseModel):
     job_id: str
     vehicle_code: str

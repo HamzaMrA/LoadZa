@@ -212,6 +212,40 @@ def test_report_for_an_unknown_plan_is_404(client):
     assert client.get("/plans/nope/report.xlsx").status_code == 404
 
 
+def test_assign_stores_each_trip_as_a_job_of_its_own(client):
+    """Trips are stored, so the viewer and the reports work on them unchanged."""
+    big = generate(vehicle_code="CNT-20DV", mix="mixed", fill=3.0, stops=2, seed=55)
+    client.post("/jobs", json=job_to_dict(big))
+
+    response = client.post(
+        f"/jobs/{big.job_id}/assign",
+        json={"fleet": ["CNT-20DV", "TIR-1360"], "max_trips": 5},
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["vehicles_used"] > 1
+    assert body["placed"] > 0
+
+    listed = {row["job_id"] for row in client.get("/jobs").json()}
+    for trip in body["trips"]:
+        assert trip["job_id"] in listed
+        assert trip["violations"]["K1"] == 0
+        # Every trip has to be openable in the viewer, which means the plan
+        # document has to load and match what the trip reported.
+        plan = client.get(f"/plans/{trip['plan_id']}").json()
+        assert len(plan["placements"]) == trip["boxes"]
+
+
+def test_assign_rejects_an_unknown_vehicle(client, job):
+    client.post("/jobs", json=job_to_dict(job))
+    bad = client.post(f"/jobs/{job.job_id}/assign", json={"fleet": ["NOPE"]})
+    assert bad.status_code == 422
+
+
+def test_assign_for_an_unknown_job_is_404(client):
+    assert client.post("/jobs/nope/assign", json={}).status_code == 404
+
+
 def test_unknown_ids_are_404(client):
     assert client.get("/jobs/nope").status_code == 404
     assert client.get("/plans/nope").status_code == 404
