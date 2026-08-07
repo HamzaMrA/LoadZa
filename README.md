@@ -9,8 +9,10 @@ constrained 3D bin packing problem. It is NP-hard: there is no practical exact
 solver, so LoadZa combines a constructive heuristic with a metaheuristic
 improvement pass and measures the result against published benchmark data.
 
-> Status: **F0 complete** — domain model, vehicle catalogue, JSON format and a
-> seeded synthetic job generator. The solver lands in F1.
+> Status: **F1 complete** — the extreme-point solver runs and enforces
+> K1–K4. Baseline: 80.5% volume utilisation on a 234-item carton load in
+> 152 ms. The independent validator lands in F2, so plans are *not* yet
+> formally verified.
 
 ## Why it is not a packing toy
 
@@ -63,8 +65,10 @@ portable.
 
 - **Millimetres and grams, integers only.** Floating point geometry produces
   overlap tests that are almost right, which is worse than useless.
-- **Origin at the rear-left-bottom corner.** `x` along the length (door → cab),
-  `y` across the width, `z` up.
+- **Origin at the front-left-bottom corner** — the closed end, furthest from
+  the doors. `x` runs along the length towards the doors, `y` across the width,
+  `z` up. Filling outwards from the origin therefore fills the deep end first,
+  which is how a trailer is actually loaded.
 - **Orientation names read in axis order.** `LWH` means length→x, width→y,
   height→z; `WLH` is the same box turned 90° about the vertical axis.
 - Frozen dataclasses everywhere; the solver replaces rather than mutates.
@@ -77,6 +81,9 @@ python -m pip install -e ".[dev]"
 
 # generate a synthetic job (13.6 m curtainside, mixed freight, 5% over-supplied)
 python -m tools.gen_demo --vehicle TIR-1360 --mix mixed --fill 1.05 --seed 42
+
+# solve it
+python -m tools.solve data/demo/TIR-1360-mixed-s42.json
 
 pytest
 ```
@@ -96,13 +103,39 @@ specifications. Benchmark inputs come from the public OR-Library CLP datasets.
 | Phase | Contents | State |
 |---|---|---|
 | F0 | Domain model, catalogue, JSON format, job generator | done |
-| F1 | Extreme-point placement heuristic, CLI solver | next |
-| F2 | Independent validator, metrics, property-based tests | |
+| F1 | Extreme-point placement heuristic, CLI solver | done |
+| F2 | Independent validator, property-based tests | next |
 | F3 | Benchmark datasets, baseline measurement | |
 | F4 | Realism constraints (K4–K8) | |
 | F5 | Simulated annealing improvement pass | |
 | F6 | FastAPI service, SQLite persistence | |
 | F7 | React + three.js viewer with load-order animation | |
+
+## Baseline results
+
+First-fit, volume-decreasing item order, support constraint on. Synthetic demo
+jobs; benchmark results against published datasets arrive in F3.
+
+| Job | Volume | Placed | Time |
+|---|---|---|---|
+| 20 ft container, cartons | 80.5% | 161 / 234 | 152 ms |
+| 40 ft high cube, pallets | 51.8% | 36 / 48 | 7 ms |
+| 13.6 m trailer, mixed | 61.2% | 102 / 102 | 34 ms |
+
+Three things these numbers hide, and none of them are solver quality:
+
+- **A load is either volume-bound or weight-bound.** The pallet job stops at
+  67% payload but only 52% volume because a 1450 mm pallet cannot be stacked
+  twice under a 2698 mm ceiling — that ceiling is physics, not a bad plan. The
+  trailer job stops at 95% payload with the vehicle a third empty. Reading
+  volume utilisation alone rewards the wrong thing.
+- **Corner selection barely matters here.** Deepest-left, layer-first and
+  maximum-contact land within 0.5% of each other, because settling collapses
+  candidates onto the same resting place. Item ordering is worth 13% by
+  comparison, which is where the F5 improvement pass will search.
+- **The support constraint costs 2.3%** on cartons and nothing on pallets.
+  Published CLP results usually do not enforce it, so any comparison has to say
+  whether it was on.
 
 ## Licence
 
