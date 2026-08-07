@@ -37,6 +37,71 @@ Per set, `layer`:
 Utilisation drifts down as cargo gets more heterogeneous, which is the expected
 shape: more box types means more awkward gaps.
 
+## F5: the improvement pass
+
+Ten instances per set, 70 total, each given an 8 second budget. Paired against
+the constructive solver on the same instances.
+
+| | Mean | Median | Min | Max |
+|---|---|---|---|---|
+| Constructive | 82.3% | | 67.2% | 91.5% |
+| **+ annealing, 8 s** | **83.4%** | | **77.1%** | 92.4% |
+| Gain | +1.18 pts | +0.68 pts | | +9.84 pts |
+
+**51 instances improved, 19 unchanged, 0 worse.** Never worse is structural,
+not luck: the incumbent starts at the constructive plan and the best-so-far is
+tracked separately, so a search that finds nothing returns what it began with.
+
+The mean understates what happened. Split the 70 by how well the constructive
+solver did:
+
+| | Constructive | Annealed | Gain |
+|---|---|---|---|
+| Weakest 15 instances | 77.8% | 80.3% | +2.51 pts |
+| Strongest 15 instances | 87.2% | 87.5% | +0.31 pts |
+
+**The search is a floor-raiser.** The worst instance in the set goes from 67.2%
+to 77.1%. Where the constructive heuristic already packed well there is little
+left to find, which is what you would expect and worth stating: a claim of a
+uniform gain across all instances would be the suspicious result.
+
+### The annealing schedule does not matter here
+
+Four starting temperatures over the same instances — 0.02, 0.005, 0.001, and
+**zero**, which is plain hill climbing:
+
+| Start temperature | Mean gain | Instances improved |
+|---|---|---|
+| 0.02 | +0.62% | 3 of 8 |
+| 0.005 | +0.67% | 3 of 8 |
+| 0.001 | +0.67% | 3 of 8 |
+| 0 (hill climbing) | +0.67% | 3 of 8 |
+
+Indistinguishable. The reason is the budget: one evaluation is a full solve, so
+8 seconds buys 20–90 of them. Escaping local optima is a mechanism for
+thousands of cheap steps, and this is not that regime. The honest description
+of what ships is "a hill climber with an annealing schedule that currently
+earns nothing" — kept because it costs nothing and starts earning the moment
+evaluation gets cheaper.
+
+Which is where the effort actually went. The spatial index used a fixed 1000 mm
+cell; benchmark containers are 587 units long, so **every box landed in one
+bucket and the index degenerated into a linear scan**. Deriving the cell size
+from the cargo and replacing per-query set construction with a stamp array cut
+the solve from 331 ms to 161 ms with byte-identical results — which doubles the
+number of orders the search can try in the same budget.
+
+### Gain against budget
+
+| Budget | Mean gain | Evaluations per instance |
+|---|---|---|
+| 3 s | +0.41% | 24 |
+| 10 s | +0.44% | 64 |
+| 30 s | +0.66% | 174 |
+
+Seven times the time for a quarter of a point. Anyone wanting more from this
+search should make evaluation cheaper, not wait longer.
+
 ## Configuration comparison — 25 instances per set, 175 total
 
 | Config | Mean | ms / instance |

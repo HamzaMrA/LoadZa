@@ -9,10 +9,11 @@ constrained 3D bin packing problem. It is NP-hard: there is no practical exact
 solver, so LoadZa combines a constructive heuristic with a metaheuristic
 improvement pass and measures the result against published benchmark data.
 
-> Status: **F4 complete** — the solver now enforces stacking limits, delivery
-> reach and lengthwise balance as constraints, not just as audit findings.
-> **82.1% mean volume utilisation across all 700 BR1–BR7 instances, 0 invalid
-> plans.** Full numbers in [docs/BENCHMARKS.md](docs/BENCHMARKS.md).
+> Status: **F5 complete** — constructive solver, constraint enforcement, an
+> independent validator and an annealing pass over item orders.
+> **82.1% mean volume utilisation across all 700 BR1–BR7 instances**, rising to
+> **83.4% with an 8 second search**, 0 invalid plans throughout.
+> Full numbers in [docs/BENCHMARKS.md](docs/BENCHMARKS.md).
 
 ## Why it is not a packing toy
 
@@ -81,7 +82,7 @@ Lateral balance is a job for the F5 global search.
 ## Layout
 
 ```
-core/      domain model, geometry, solver, validator, metrics  (pure Python)
+core/      domain model, geometry, solver, improvement, validator  (pure Python)
 tools/     command line utilities, synthetic job generator
 tests/     pytest suite
 bench/     OR-Library instance parser and benchmark runner
@@ -125,9 +126,13 @@ python -m tools.validate data/demo/TIR-1360-mixed-s42.json \
 python -m tools.view data/demo/TIR-1360-mixed-s42.json \
     data/plans/TIR-1360-mixed-s42-dbl-first_fit.json
 
+# spend 20 seconds searching item orders for a better plan
+python -m tools.improve data/demo/TIR-1360-mixed-s42.json --seconds 20
+
 # benchmark against the published instances
 python -m tools.fetch_datasets
 python -m bench.run_bench --limit 10
+python -m bench.run_bench --limit 10 --anneal-seconds 8
 
 pytest
 ```
@@ -163,8 +168,8 @@ data. Nothing needs a network after that first fetch.
 | F2 | Independent validator, property tests, schematic renderer | done |
 | F3 | Benchmark harness over BR1–BR7, LN and the small set | done |
 | F4 | Stacking limits, delivery reach, load balancing | done |
-| F5 | Simulated annealing improvement pass | next |
-| F6 | FastAPI service, SQLite persistence | |
+| F5 | Simulated annealing over item orders | done |
+| F6 | FastAPI service, SQLite persistence | next |
 | F7 | React + three.js viewer with load-order animation | |
 
 ## Results
@@ -173,13 +178,26 @@ data. Nothing needs a network after that first fetch.
 
 | Config | Mean utilisation | ms / instance |
 |---|---|---|
-| `layer` (default) | **82.1%** | 396 |
+| `layer` (default) | **82.1%** | 161 |
 | `dbl` | 81.6% | 383 |
 
-Per-set figures, the configuration comparison, and what these numbers do *not*
-claim are in [docs/BENCHMARKS.md](docs/BENCHMARKS.md). Short version: this is a
-purely constructive solver with no improvement pass, and 82% is the bar phase
-F5 has to clear.
+**With the annealing pass**, on 70 of those instances at 8 seconds each, paired
+against the same instances solved once:
+
+| | Mean | Min | Improved | Worse |
+|---|---|---|---|---|
+| Constructive | 82.3% | 67.2% | | |
+| + annealing | **83.4%** | **77.1%** | 51 of 70 | **0** |
+
+The mean gain is +1.18 points and the median +0.68, but the minimum moves ten.
+The search is a floor-raiser: it finds most of its value on the instances the
+constructive heuristic packed badly, and almost nothing on the ones it already
+packed well. Never-worse is structural — the best-so-far starts at the
+constructive plan.
+
+Per-set figures, the temperature study (annealing is currently
+indistinguishable from hill climbing, and why), and what these numbers do *not*
+claim are in [docs/BENCHMARKS.md](docs/BENCHMARKS.md).
 
 On the synthetic demo jobs:
 

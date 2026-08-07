@@ -90,6 +90,22 @@ def distinct_orientations(
     return tuple(seen.values())
 
 
+def suggest_cell_size(inner: Dims, item_dims: list[Dims]) -> int:
+    """Grid cell size for a job: roughly one box across.
+
+    Getting this wrong is not a small loss. A cell larger than the container
+    puts every box in one bucket and the index degenerates to a linear scan --
+    which is exactly what a fixed 1000 mm cell did to the benchmark instances,
+    whose containers are 587 units long.
+    """
+    if item_dims:
+        average = sum((d.l + d.w + d.h) / 3 for d in item_dims) / len(item_dims)
+    else:
+        average = min(inner.l, inner.w, inner.h) / 4
+    smallest_side = min(inner.l, inner.w, inner.h)
+    return max(1, int(min(average, max(smallest_side / 2, 1))))
+
+
 class SpatialIndex:
     """Uniform grid over the loading space.
 
@@ -97,16 +113,27 @@ class SpatialIndex:
     box costs O(n) per query and the solver makes O(items x points x
     orientations) of them; bucketing by cell keeps each query to the handful of
     boxes that could possibly be in the way.
+
+    Two grids are kept. The 3D one answers overlap and contact questions. The
+    2D column grid answers "what is underneath this footprint", which settling
+    and support both ask constantly -- going through the 3D grid would mean
+    walking every cell from the floor up to the candidate.
+
+    Queries mark boxes with a per-query token instead of collecting them into a
+    set. Building a set per query cost more than the overlap tests it fed.
     """
 
-    __slots__ = ("cell", "_cells", "_boxes")
+    __slots__ = ("cell", "_cells", "_columns", "_boxes", "_stamp", "_token")
 
     def __init__(self, cell: int = 1000) -> None:
         if cell <= 0:
             raise ValueError("cell size must be positive")
         self.cell = cell
         self._cells: dict[tuple[int, int, int], list[int]] = {}
+        self._columns: dict[tuple[int, int], list[int]] = {}
         self._boxes: list[Box] = []
+        self._stamp: list[int] = []
+        self._token = 0
 
     def __len__(self) -> int:
         return len(self._boxes)
@@ -122,14 +149,25 @@ class SpatialIndex:
                 for k in range(b[2] // c, (max(b[5], b[2] + 1) - 1) // c + 1):
                     yield (i, j, k)
 
+    def _column_span(self, b: Box) -> Iterator[tuple[int, int]]:
+        c = self.cell
+        for i in range(b[0] // c, (max(b[3], b[0] + 1) - 1) // c + 1):
+            for j in range(b[1] // c, (max(b[4], b[1] + 1) - 1) // c + 1):
+                yield (i, j)
+
     def add(self, b: Box) -> int:
         index = len(self._boxes)
         self._boxes.append(b)
+        self._stamp.append(0)
         for key in self._span(b):
             self._cells.setdefault(key, []).append(index)
+        for key in self._column_span(b):
+            self._columns.setdefault(key, []).append(index)
         return index
 
     def nearby(self, b: Box) -> set[int]:
+        """Every box sharing a cell with ``b``. Convenience for callers and
+        tests; the hot paths below walk the buckets directly."""
         found: set[int] = set()
         for key in self._span(b):
             bucket = self._cells.get(key)
@@ -138,10 +176,21 @@ class SpatialIndex:
         return found
 
     def collides(self, b: Box) -> bool:
+        self._token += 1
+        token = self._token
+        stamp = self._stamp
         boxes = self._boxes
-        for i in self.nearby(b):
-            if overlaps(b, boxes[i]):
-                return True
+        cells = self._cells
+        for key in self._span(b):
+            bucket = cells.get(key)
+            if not bucket:
+                continue
+            for i in bucket:
+                if stamp[i] == token:
+                    continue
+                stamp[i] = token
+                if overlaps(b, boxes[i]):
+                    return True
         return False
 
     def settle(self, b: Box) -> Box:
@@ -155,13 +204,24 @@ class SpatialIndex:
         x0, y0, z0, x1, y1, z1 = b
         if z0 == 0:
             return b
-        probe = (x0, y0, 0, x1, y1, z0)
-        rest = 0
+        self._token += 1
+        token = self._token
+        stamp = self._stamp
         boxes = self._boxes
-        for i in self.nearby(probe):
-            other = boxes[i]
-            if other[5] <= z0 and other[5] > rest and overlap_area_xy(b, other) > 0:
-                rest = other[5]
+        columns = self._columns
+        rest = 0
+        for key in self._column_span(b):
+            bucket = columns.get(key)
+            if not bucket:
+                continue
+            for i in bucket:
+                if stamp[i] == token:
+                    continue
+                stamp[i] = token
+                other = boxes[i]
+                top = other[5]
+                if top <= z0 and top > rest and overlap_area_xy(b, other) > 0:
+                    rest = top
         if rest == z0:
             return b
         return (x0, y0, rest, x1, y1, rest + (z1 - z0))
@@ -172,18 +232,29 @@ class SpatialIndex:
         Empty for a box on the floor, and empty for one hanging in mid-air --
         the caller distinguishes those by ``b[2] == 0``.
         """
-        if b[2] == 0:
+        bottom = b[2]
+        if bottom == 0:
             return []
-        probe = (b[0], b[1], max(b[2] - 1, 0), b[3], b[4], b[2] + 1)
-        found = []
+        self._token += 1
+        token = self._token
+        stamp = self._stamp
         boxes = self._boxes
-        for i in self.nearby(probe):
-            other = boxes[i]
-            if other[5] != b[2]:
+        columns = self._columns
+        found = []
+        for key in self._column_span(b):
+            bucket = columns.get(key)
+            if not bucket:
                 continue
-            area = overlap_area_xy(b, other)
-            if area > 0:
-                found.append((i, area))
+            for i in bucket:
+                if stamp[i] == token:
+                    continue
+                stamp[i] = token
+                other = boxes[i]
+                if other[5] != bottom:
+                    continue
+                area = overlap_area_xy(b, other)
+                if area > 0:
+                    found.append((i, area))
         return found
 
     def support_ratio(self, b: Box) -> float:

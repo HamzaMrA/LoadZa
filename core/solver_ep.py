@@ -37,6 +37,7 @@ from core.geometry import (
     distinct_orientations,
     inside,
     make_box,
+    suggest_cell_size,
 )
 from core.metrics import evaluate
 from core.models import Dims, Gram, Item, Job, Orientation, Placement, Plan, Pos, Unplaced
@@ -49,6 +50,10 @@ ITEM_ORDERS = {
     "height_desc": lambda it: (-it.type.dims.h, -it.type.dims.volume, it.uid),
     "weight_desc": lambda it: (-it.type.weight_g, it.uid),
     "as_given": lambda it: (it.uid,),
+    #: Take the job's item tuple in the order it arrives. This is the hook the
+    #: improvement pass (F5) drives: it searches permutations, so it must be
+    #: able to hand one over without the solver re-sorting it away.
+    "sequence": None,
 }
 
 
@@ -103,7 +108,10 @@ class SolverConfig:
     #: Cap on candidate corners examined per item. The pool grows by three per
     #: placement, and the far tail is almost never the winner.
     max_points: int = 400
-    cell_mm: int = 1000
+    #: Grid cell size. ``None`` derives it from the cargo, which is almost
+    #: always right; a fixed value that exceeds the container turns the index
+    #: into a linear scan.
+    cell_mm: int | None = None
     #: Pruning buried corners costs a collision query each, so batch it.
     prune_every: int = 16
 
@@ -331,7 +339,10 @@ def solve(job: Job, config: SolverConfig | None = None) -> Plan:
 
     started = perf_counter()
     inner = job.vehicle.inner
-    index = SpatialIndex(cell=config.cell_mm)
+    cell = config.cell_mm or suggest_cell_size(
+        inner, [item.type.dims for item in job.items]
+    )
+    index = SpatialIndex(cell=cell)
     pool = ExtremePoints()
     state = _LoadState()
     min_support = job.vehicle.min_support_ratio if config.enforce_support else 0.0
@@ -343,15 +354,23 @@ def solve(job: Job, config: SolverConfig | None = None) -> Plan:
     since_prune = 0
 
     base_key = ITEM_ORDERS[config.item_order]
-    if config.enforce_lifo:
-        # Last stop first, so it ends up deepest and the first drop finishes
-        # nearest the doors.
-        def order_key(item: Item):
-            return (-item.stop, *base_key(item))
+    if base_key is None:
+        # "sequence": honour the caller's order. Sorting by stop alone is
+        # stable, so the given order survives inside each stop.
+        ordered_items = list(job.items)
+        if config.enforce_lifo:
+            ordered_items.sort(key=lambda item: -item.stop)
     else:
-        order_key = base_key
+        if config.enforce_lifo:
+            # Last stop first, so it ends up deepest and the first drop
+            # finishes nearest the doors.
+            def order_key(item: Item):
+                return (-item.stop, *base_key(item))
+        else:
+            order_key = base_key
+        ordered_items = sorted(job.items, key=order_key)
 
-    for item in sorted(job.items, key=order_key):
+    for item in ordered_items:
         if item.weight_g > remaining_payload:
             # Sorted by size, not weight, so a later light item may still fit.
             unplaced.append(Unplaced(item.uid, item.sku, "payload"))

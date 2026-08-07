@@ -23,6 +23,7 @@ from pathlib import Path
 from statistics import mean
 
 from bench.loader import SETS, Instance, load_set
+from core.improve_sa import AnnealConfig, improve
 from core.solver_ep import SolverConfig, solve
 from core.validator import validate
 
@@ -57,10 +58,19 @@ class Row:
     violations: int
 
 
-def run_instance(instance: Instance, config_name: str) -> Row:
+def run_instance(
+    instance: Instance, config_name: str, anneal_seconds: float | None = None
+) -> Row:
     config, support = CONFIGS[config_name]
     job = instance.to_job(support_ratio=support)
-    plan = solve(job, config)
+
+    if anneal_seconds:
+        plan = improve(
+            job,
+            AnnealConfig(iterations=100_000, time_budget_s=anneal_seconds, solver=config),
+        ).plan
+    else:
+        plan = solve(job, config)
 
     checks = BENCH_CHECKS + ("K4",) if support > 0 else BENCH_CHECKS
     report = validate(job, plan, checks=checks)
@@ -137,6 +147,9 @@ def main() -> int:
                         help="use only the first N instances of each set")
     parser.add_argument("--skip-malformed", action="store_true",
                         help="drop source records that do not parse (thpack9 has one)")
+    parser.add_argument("--anneal-seconds", type=float, default=None, metavar="S",
+                        help="run each instance through the improvement pass "
+                             "for S seconds instead of solving once")
     parser.add_argument("--out", type=Path,
                         default=Path("bench/results/bench.csv"))
     args = parser.parse_args()
@@ -152,7 +165,7 @@ def main() -> int:
             if args.limit is not None:
                 instances = instances[: args.limit]
             for instance in instances:
-                rows.append(run_instance(instance, config_name))
+                rows.append(run_instance(instance, config_name, args.anneal_seconds))
             done = [r for r in rows if r.config == config_name and r.set_name == set_name]
             print(f"  {config_name:<12}{set_name:<6}"
                   f"{len(done):>4} instances  mean "
