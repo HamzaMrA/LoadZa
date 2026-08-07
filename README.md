@@ -9,12 +9,10 @@ constrained 3D bin packing problem. It is NP-hard: there is no practical exact
 solver, so LoadZa combines a constructive heuristic with a metaheuristic
 improvement pass and measures the result against published benchmark data.
 
-> Status: **F7 complete** — constructive solver, constraint enforcement, an
-> independent validator, an annealing pass over item orders, an HTTP service
-> with SQLite persistence, and a 3D viewer.
-> **82.1% mean volume utilisation across all 700 BR1–BR7 instances**, rising to
-> **83.4% with an 8 second search**, 0 invalid plans throughout.
-> Full numbers in [docs/BENCHMARKS.md](docs/BENCHMARKS.md).
+> **82.1% mean volume utilisation across all 700 published BR1–BR7 instances**,
+> rising to **83.4% with an 8 second search**, and not one invalid plan in any
+> run. Numbers, method, and what they do *not* claim:
+> [docs/BENCHMARKS.md](docs/BENCHMARKS.md).
 
 ## Why it is not a packing toy
 
@@ -167,9 +165,19 @@ nobody had checked would be worse than no plan at all.
 
 ## Browser workbench
 
-Two terminals, and everything else happens on the page — build a job from the
-catalogue, solve it, look at it, and solve it again with a constraint turned off
-to see what that constraint costs.
+Everything happens on the page — build a job from the catalogue, solve it, look
+at it, and solve it again with a constraint turned off to see what that
+constraint costs.
+
+```bash
+docker compose up --build                # → http://localhost:8000
+```
+
+One image: the viewer is built with Node and served by the API, so there is one
+port and no reverse proxy to configure. Jobs live on a named volume, because a
+service that forgets every job it solved when it restarts is a demo.
+
+For development, two terminals and hot reload:
 
 ```bash
 uvicorn app.api:app                      # terminal 1, from the repo root
@@ -271,7 +279,7 @@ data. Nothing needs a network after that first fetch.
 | F7 | React + three.js viewer with load-order animation | done |
 | F8 | Printable loading plan (PDF) and item list (Excel) | done |
 | F9 | Multi-vehicle assignment | done |
-| F10 | Docker, demo recording, final packaging | next |
+| F10 | Docker, CI, packaging | done |
 
 ## Results
 

@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import os
 from dataclasses import replace
+from pathlib import Path
 from typing import Any
 
 from fastapi import Depends, FastAPI, HTTPException, Response
@@ -341,3 +342,14 @@ def validate_plan(request: ValidationRequest) -> ValidationResponse:
 @app.exception_handler(NotFound)
 def _not_found(_request, error: NotFound) -> JSONResponse:
     return JSONResponse(status_code=404, content={"detail": str(error)})
+
+
+# Serve the built viewer from the API's own origin when a bundle is present.
+# Mounted last, so every route above still wins; the viewer's assets are
+# referenced relatively, which is what lets it sit at the root here and under a
+# subpath on a static host without rebuilding.
+_WEB_DIST = Path(os.environ.get("LOADZA_WEB", "web-dist"))
+if _WEB_DIST.is_dir():
+    from fastapi.staticfiles import StaticFiles
+
+    app.mount("/", StaticFiles(directory=_WEB_DIST, html=True), name="web")

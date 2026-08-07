@@ -1,0 +1,13 @@
+services:
+  loadza:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - loadza-data:/data
+    environment:
+      LOADZA_DB: /data/loadza.sqlite
+    restart: unless-stopped
+
+volumes:
+  loadza-data:

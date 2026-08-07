@@ -1,0 +1,21 @@
+.git
+.github
+.venv
+**/__pycache__
+**/*.py[cod]
+.pytest_cache
+.hypothesis
+.ruff_cache
+*.egg-info
+
+tests
+docs
+web/node_modules
+web/dist
+
+# Generated at runtime, not baked into the image.
+data/plans
+data/reports
+data/*.sqlite
+bench/datasets/*.txt
+bench/results
