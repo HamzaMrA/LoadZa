@@ -42,6 +42,44 @@ jobs:
       - name: Smoke benchmark
         run: python -m bench.run_bench --sets BR1 BR7 --limit 5
 
+  # Builds the image and proves the assembled thing answers, which is more than
+  # "the Dockerfile parses": the viewer has to be served from the API's own
+  # origin without shadowing any route.
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Build image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          load: true
+          tags: loadza:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: Run it and drive it
+        run: |
+          docker run -d --name loadza -p 8000:8000 loadza:ci
+          for i in $(seq 1 30); do
+            curl -sf localhost:8000/health && break
+            sleep 2
+          done
+          curl -sf localhost:8000/health
+          curl -sf localhost:8000/catalog > /dev/null
+          # The viewer, served from the API's root.
+          curl -sf localhost:8000/ | grep -q '<div id="root">'
+          # And a job solved end to end inside the container.
+          curl -sf -X POST localhost:8000/jobs \
+            -H 'content-type: application/json' \
+            --data-binary @data/demo/CNT-20DV-cartons-s13.json > /dev/null
+          curl -sf -X POST localhost:8000/jobs/CNT-20DV-cartons-s13/solve \
+            -H 'content-type: application/json' -d '{}' | tee /tmp/plan.json
+          grep -q '"K1": *0' /tmp/plan.json
+      - name: Logs on failure
+        if: failure()
+        run: docker logs loadza
+
   web:
     runs-on: ubuntu-latest
     defaults:
