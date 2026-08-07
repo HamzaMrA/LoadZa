@@ -21,7 +21,7 @@ from core.models import (
     Pos,
     Vehicle,
 )
-from core.solver_ep import solve
+from core.solver_ep import SolverConfig, solve
 from core.validator import validate
 from tools.gen_demo import generate
 
@@ -292,13 +292,38 @@ def test_solver_output_satisfies_the_constraints_it_claims(vehicle_code, mix, fi
     assert report.is_valid, report.summary()
 
 
-def test_the_solver_currently_leaves_the_load_nose_heavy():
-    """Documents a known gap: nothing in F1 balances the load.
+def test_known_gap_the_load_is_not_balanced():
+    """K5, K7 and K8 are not solver constraints until F4.
 
-    Filling from the closed end outwards piles the weight at the front. K7 is
-    not a solver constraint until F4, and this test exists so that the day it
-    is fixed, the failure points at the right file.
+    These assertions are inverted on purpose: they claim the gaps still exist,
+    so that closing one fails here and points at the right file. The pallet job
+    is used because it stays unbalanced under either scorer -- see
+    test_scorer_choice_trades_one_constraint_for_another.
+    """
+    job = generate(vehicle_code="CNT-40HC", mix="pallets", fill=1.10, seed=7)
+    assert not validate(job, solve(job), checks=("K7",)).is_valid
+
+
+def test_known_gap_fragile_boxes_still_get_crushed_and_stops_interleave():
+    job = generate(vehicle_code="CNT-40DV", mix="mixed", fill=0.85, stops=3, seed=77)
+    report = validate(job, solve(job), checks=("K5", "K8"))
+    assert report.counts["K5"] > 0
+    assert report.counts["K8"] > 0
+
+
+def test_scorer_choice_trades_one_constraint_for_another():
+    """Layer-first spreads the load lengthwise but stacks higher.
+
+    On the mixed trailer job it fixes the centre of gravity -- 1894 mm off
+    centre with ``dbl``, inside tolerance with ``layer`` -- and in exchange
+    starts resting weight on fragile crates. Neither scorer is safe on its own;
+    F4 has to enforce K5 and K7 directly rather than hope a heuristic lands
+    somewhere reasonable.
     """
     job = generate(vehicle_code="TIR-1360", mix="mixed", fill=1.05, seed=42)
-    report = validate(job, solve(job), checks=("K7",))
-    assert not report.is_valid
+
+    deep = validate(job, solve(job, SolverConfig(scorer="dbl")), checks=("K5", "K7"))
+    layered = validate(job, solve(job, SolverConfig(scorer="layer")), checks=("K5", "K7"))
+
+    assert deep.counts["K7"] > 0 and deep.counts["K5"] == 0
+    assert layered.counts["K7"] == 0 and layered.counts["K5"] > 0

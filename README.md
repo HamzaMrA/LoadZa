@@ -9,9 +9,10 @@ constrained 3D bin packing problem. It is NP-hard: there is no practical exact
 solver, so LoadZa combines a constructive heuristic with a metaheuristic
 improvement pass and measures the result against published benchmark data.
 
-> Status: **F2 complete** — solver, independent validator and a schematic
-> renderer. Every constraint has a test that breaks it on purpose. Baseline:
-> 80.5% volume utilisation on a 234-item carton load in 152 ms.
+> Status: **F3 complete** — solver, independent validator, schematic renderer
+> and a benchmark harness over the published OR-Library instances.
+> **82.1% mean volume utilisation across all 700 BR1–BR7 instances, 0 invalid
+> plans.** Full numbers in [docs/BENCHMARKS.md](docs/BENCHMARKS.md).
 
 ## Why it is not a packing toy
 
@@ -66,7 +67,7 @@ counts are the specification for the next phase.
 core/      domain model, geometry, solver, validator, metrics  (pure Python)
 tools/     command line utilities, synthetic job generator
 tests/     pytest suite
-bench/     benchmark datasets and runner                        (F3)
+bench/     OR-Library instance parser and benchmark runner
 app/       FastAPI service and reporting                        (F6)
 web/       React + three.js viewer                              (F7)
 data/demo/ generated example jobs
@@ -107,15 +108,19 @@ python -m tools.validate data/demo/TIR-1360-mixed-s42.json \
 python -m tools.view data/demo/TIR-1360-mixed-s42.json \
     data/plans/TIR-1360-mixed-s42-dbl-first_fit.json
 
+# benchmark against the published instances
+python -m tools.fetch_datasets
+python -m bench.run_bench --limit 10
+
 pytest
 ```
 
-![Side and top view of a solved trailer load](docs/TIR-1360-mixed-s42-dbl-first_fit.png)
+![Side and top view of a solved trailer load](docs/TIR-1360-mixed-s42-layer-first_fit.png)
 
-The picture makes the solver's blind spot obvious: the load stops 2.8 m short
-of the doors and the centre of gravity sits well ahead of the axle line. That
-is what `K7 x1` in the header means, and why a validator that only returned
-"valid / invalid" would not be enough.
+The header line is the validator's, not the solver's. `K5 x5` says five fragile
+crates are carrying weight they are rated for none of — a real defect, visible
+in a plan that is otherwise legal. A checker that only answered "valid" or
+"invalid" would not have told anyone that.
 
 Available vehicles: `TIR-1360` (13.6 m curtainside semi-trailer), `CNT-20DV`,
 `CNT-40DV`, `CNT-40HC` (20 ft / 40 ft / 40 ft high cube containers).
@@ -125,7 +130,13 @@ Available vehicles: `TIR-1360` (13.6 m curtainside semi-trailer), `CNT-20DV`,
 **No customer or production data is used.** Every job is synthetic, produced by
 a seeded RNG from a catalogue of standard unit loads (Euro pallets, industrial
 pallets, cartons, drums). Vehicle dimensions are published container and trailer
-specifications. Benchmark inputs come from the public OR-Library CLP datasets.
+specifications.
+
+Benchmark inputs are the public OR-Library CLP datasets. They are not
+committed — `python -m tools.fetch_datasets` downloads them once and records
+their SHA-256 in `bench/datasets/CHECKSUMS.txt`, which *is* committed, so the
+numbers above stay reproducible without redistributing someone else's research
+data. Nothing needs a network after that first fetch.
 
 ## Roadmap
 
@@ -134,16 +145,27 @@ specifications. Benchmark inputs come from the public OR-Library CLP datasets.
 | F0 | Domain model, catalogue, JSON format, job generator | done |
 | F1 | Extreme-point placement heuristic, CLI solver | done |
 | F2 | Independent validator, property tests, schematic renderer | done |
-| F3 | Benchmark datasets, baseline measurement | next |
-| F4 | Remaining realism constraints (K5, K7, K8) | |
+| F3 | Benchmark harness over BR1–BR7, LN and the small set | done |
+| F4 | Remaining realism constraints (K5, K7, K8) | next |
 | F5 | Simulated annealing improvement pass | |
 | F6 | FastAPI service, SQLite persistence | |
 | F7 | React + three.js viewer with load-order animation | |
 
-## Baseline results
+## Results
 
-First-fit, volume-decreasing item order, support constraint on. Synthetic demo
-jobs; benchmark results against published datasets arrive in F3.
+**BR1–BR7, all 700 published instances, 0 invalid plans:**
+
+| Config | Mean utilisation | ms / instance |
+|---|---|---|
+| `layer` (default) | **82.1%** | 396 |
+| `dbl` | 81.6% | 383 |
+
+Per-set figures, the configuration comparison, and what these numbers do *not*
+claim are in [docs/BENCHMARKS.md](docs/BENCHMARKS.md). Short version: this is a
+purely constructive solver with no improvement pass, and 82% is the bar phase
+F5 has to clear.
+
+On the synthetic demo jobs:
 
 | Job | Volume | Placed | Time |
 |---|---|---|---|
@@ -151,20 +173,17 @@ jobs; benchmark results against published datasets arrive in F3.
 | 40 ft high cube, pallets | 51.8% | 36 / 48 | 7 ms |
 | 13.6 m trailer, mixed | 61.2% | 102 / 102 | 34 ms |
 
-Three things these numbers hide, and none of them are solver quality:
+Two things those demo numbers hide, neither of them solver quality:
 
 - **A load is either volume-bound or weight-bound.** The pallet job stops at
   67% payload but only 52% volume because a 1450 mm pallet cannot be stacked
   twice under a 2698 mm ceiling — that ceiling is physics, not a bad plan. The
   trailer job stops at 95% payload with the vehicle a third empty. Reading
   volume utilisation alone rewards the wrong thing.
-- **Corner selection barely matters here.** Deepest-left, layer-first and
-  maximum-contact land within 0.5% of each other, because settling collapses
-  candidates onto the same resting place. Item ordering is worth 13% by
-  comparison, which is where the F5 improvement pass will search.
-- **The support constraint costs 2.3%** on cartons and nothing on pallets.
-  Published CLP results usually do not enforce it, so any comparison has to say
-  whether it was on.
+- **Three jobs are not a sample.** All three scorers scored identically on
+  them, and the conclusion drawn at the time — that corner selection does not
+  matter — did not survive contact with 700 benchmark instances. It does
+  matter, consistently.
 
 ## Licence
 

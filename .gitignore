@@ -11,6 +11,11 @@ dist/
 # generated plans and benchmark output; demo *jobs* are committed
 data/plans/
 bench/results/
+
+# OR-Library data belongs to OR-Library; fetch it with tools/fetch_datasets.py.
+# CHECKSUMS.txt is committed so results stay reproducible.
+bench/datasets/*.txt
+!bench/datasets/CHECKSUMS.txt
 *.sqlite
 *.db
 

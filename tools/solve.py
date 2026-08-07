@@ -56,12 +56,17 @@ def summarise(job: Job, plan: Plan) -> str:
 def main() -> None:
     parser = argparse.ArgumentParser(description="Solve a LoadZa job")
     parser.add_argument("job", type=Path, help="path to a job JSON file")
-    parser.add_argument("--item-order", default="volume_desc", choices=sorted(ITEM_ORDERS))
-    parser.add_argument("--scorer", default="dbl", choices=sorted(SCORERS))
-    parser.add_argument("--search", default="first_fit", choices=["first_fit", "best_fit"])
+    # Defaults come from SolverConfig so the CLI cannot drift away from the
+    # library default -- which it silently did once already.
+    defaults = SolverConfig()
+    parser.add_argument("--item-order", default=defaults.item_order,
+                        choices=sorted(ITEM_ORDERS))
+    parser.add_argument("--scorer", default=defaults.scorer, choices=sorted(SCORERS))
+    parser.add_argument("--search", default=defaults.search,
+                        choices=["first_fit", "best_fit"])
     parser.add_argument("--no-support", action="store_true",
                         help="disable the K4 support check (for comparison runs)")
-    parser.add_argument("--max-points", type=int, default=400)
+    parser.add_argument("--max-points", type=int, default=defaults.max_points)
     parser.add_argument("--explain", type=int, default=0, metavar="N",
                         help="print the first N violations in full")
     parser.add_argument("--out", type=Path, default=None)
