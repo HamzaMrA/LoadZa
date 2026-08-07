@@ -12,6 +12,9 @@ improvement pass and measures the result against published benchmark data.
 > **82.1% mean volume utilisation across all 700 published BR1–BR7 instances**,
 > rising to **83.4% with an 8 second search**, and not one invalid plan in any
 > run.
+>
+> **[Try the viewer →](https://hamzamra.github.io/LoadZa/)** — a solved
+> three-drop container load, no install required.
 
 ## Why it is not a packing toy
 
