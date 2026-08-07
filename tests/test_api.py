@@ -181,6 +181,14 @@ def test_malformed_documents_are_422(client, job):
     assert bad.status_code == 422
 
 
+def test_store_round_trips_a_job_exactly(tmp_path, job):
+    """Including item order, which the annealing pass uses as its start point."""
+    store = Store(tmp_path / "s.sqlite")
+    store.initialise()
+    store.save_job(job)
+    assert store.load_job(job.job_id) == job
+
+
 def test_store_rejects_a_plan_without_its_job(tmp_path, job):
     store = Store(tmp_path / "s.sqlite")
     store.initialise()

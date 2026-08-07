@@ -63,7 +63,10 @@ class PlanSummary(BaseModel):
 
     @property
     def is_valid(self) -> bool:
-        return all(count == 0 for count in self.violations.values())
+        """Checked and clean. An unchecked plan is not valid -- see Metrics."""
+        return bool(self.violations) and all(
+            count == 0 for count in self.violations.values()
+        )
 
 
 class ValidationRequest(BaseModel):

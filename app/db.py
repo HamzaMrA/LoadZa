@@ -168,8 +168,12 @@ class Store:
             }
             items = tuple(
                 Item(uid=r["uid"], type=types[r["sku"]], stop=r["stop"])
+                # Insertion order, not uid order. The two differ -- a job read
+                # from a file arrives grouped by sku -- and the annealing pass
+                # uses the job's own sequence as its starting permutation, so a
+                # job that came back reordered would search from somewhere else.
                 for r in connection.execute(
-                    "SELECT uid, sku, stop FROM job_item WHERE job_id = ? ORDER BY uid",
+                    "SELECT uid, sku, stop FROM job_item WHERE job_id = ? ORDER BY id",
                     (job_id,),
                 )
             )

@@ -19,6 +19,7 @@ from core.models import (
     UPRIGHT_ORIENTATIONS,
     rotate,
 )
+from core.solver_ep import solve
 from tools.gen_demo import generate
 
 
@@ -178,5 +179,18 @@ def test_plan_json_round_trip():
 def test_metrics_is_valid_flag():
     clean = Metrics(0.9, 0.5, 10, 0, 0, 0, 5, {"K1": 0, "K4": 0})
     dirty = Metrics(0.9, 0.5, 10, 0, 0, 0, 5, {"K1": 0, "K4": 2})
-    assert clean.is_valid
+    assert clean.is_valid and clean.checked
     assert not dirty.is_valid
+
+
+def test_an_unchecked_plan_is_not_valid():
+    """The solver leaves violations empty because it may not grade itself.
+
+    Reading that as a clean bill of health is how an unaudited plan ships.
+    """
+    unchecked = Metrics(0.9, 0.5, 10, 0, 0, 0, 5)
+    assert not unchecked.checked
+    assert not unchecked.is_valid
+
+    fresh = solve(generate(vehicle_code="CNT-20DV", mix="cartons", fill=0.4, seed=1))
+    assert not fresh.metrics.checked

@@ -220,8 +220,22 @@ class Metrics:
     violations: dict[str, int] = field(default_factory=dict)
 
     @property
+    def checked(self) -> bool:
+        """Whether a validator has looked at this plan at all."""
+        return bool(self.violations)
+
+    @property
     def is_valid(self) -> bool:
-        return all(count == 0 for count in self.violations.values())
+        """True only for a plan that was checked and came back clean.
+
+        An unchecked plan is not valid. Reading an empty violation dict as a
+        clean bill of health is exactly how an unaudited plan gets shipped:
+        the solver leaves the dict empty because it is not entitled to grade
+        itself, and nothing downstream should mistake that for approval.
+        """
+        return bool(self.violations) and all(
+            count == 0 for count in self.violations.values()
+        )
 
 
 @dataclass(frozen=True, slots=True)

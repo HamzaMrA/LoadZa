@@ -1,9 +1,10 @@
 """Plan quality measurement.
 
 Kept apart from the solver on purpose: a solver that reports its own score is
-free to grade generously. The validator (F2) fills in the violation counts;
-until then ``violations`` stays empty, which ``Metrics.is_valid`` reads as clean
--- so do not treat an F1 plan as validated.
+free to grade generously. Violation counts are filled in by
+:mod:`core.validator`, never here, so a plan straight out of the solver carries
+an empty dict -- which ``Metrics.is_valid`` reports as *not* valid. Unchecked is
+not the same as clean.
 """
 
 from __future__ import annotations
