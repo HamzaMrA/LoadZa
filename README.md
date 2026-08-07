@@ -9,8 +9,9 @@ constrained 3D bin packing problem. It is NP-hard: there is no practical exact
 solver, so LoadZa combines a constructive heuristic with a metaheuristic
 improvement pass and measures the result against published benchmark data.
 
-> Status: **F5 complete** — constructive solver, constraint enforcement, an
-> independent validator and an annealing pass over item orders.
+> Status: **F6 complete** — constructive solver, constraint enforcement, an
+> independent validator, an annealing pass over item orders, and an HTTP
+> service with SQLite persistence.
 > **82.1% mean volume utilisation across all 700 BR1–BR7 instances**, rising to
 > **83.4% with an 8 second search**, 0 invalid plans throughout.
 > Full numbers in [docs/BENCHMARKS.md](docs/BENCHMARKS.md).
@@ -86,7 +87,7 @@ core/      domain model, geometry, solver, improvement, validator  (pure Python)
 tools/     command line utilities, synthetic job generator
 tests/     pytest suite
 bench/     OR-Library instance parser and benchmark runner
-app/       FastAPI service and reporting                        (F6)
+app/       FastAPI service and SQLite persistence
 web/       React + three.js viewer                              (F7)
 data/demo/ generated example jobs
 docs/      notes, screenshots
@@ -137,6 +138,30 @@ python -m bench.run_bench --limit 10 --anneal-seconds 8
 pytest
 ```
 
+Or drive it over HTTP:
+
+```bash
+pip install -e ".[api]"
+uvicorn app.api:app --reload            # interactive docs at /docs
+
+curl -X POST localhost:8000/jobs -H 'content-type: application/json' \
+     -d @data/demo/TIR-1360-mixed-s42.json
+curl -X POST localhost:8000/jobs/TIR-1360-mixed-s42/solve \
+     -H 'content-type: application/json' -d '{"anneal_seconds": 10}'
+curl localhost:8000/jobs/TIR-1360-mixed-s42/plans     # every plan, best first
+```
+
+| Endpoint | Does |
+|---|---|
+| `POST /jobs` | Store a job document |
+| `POST /jobs/{id}/solve` | Solve or anneal, audit, store, return the metrics |
+| `GET /jobs/{id}/plans` | Compare every plan of a job, best utilisation first |
+| `GET /plans/{id}` | The full plan document, as the viewer consumes it |
+| `POST /validate` | Audit any job and plan, including ones from elsewhere |
+
+Every stored plan carries the validator's verdict — a plan in the database that
+nobody had checked would be worse than no plan at all.
+
 ![Side and top view of a three-stop container load](docs/CNT-40DV-3stop-s77-layer-first_fit.png)
 
 A three-drop load, coloured by delivery stop. The last stop is packed deepest
@@ -169,8 +194,8 @@ data. Nothing needs a network after that first fetch.
 | F3 | Benchmark harness over BR1–BR7, LN and the small set | done |
 | F4 | Stacking limits, delivery reach, load balancing | done |
 | F5 | Simulated annealing over item orders | done |
-| F6 | FastAPI service, SQLite persistence | next |
-| F7 | React + three.js viewer with load-order animation | |
+| F6 | FastAPI service, SQLite persistence | done |
+| F7 | React + three.js viewer with load-order animation | next |
 
 ## Results
 

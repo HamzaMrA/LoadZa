@@ -26,3 +26,6 @@ web/dist/
 .vscode/
 .idea/
 .DS_Store
+
+# runtime database
+data/*.sqlite

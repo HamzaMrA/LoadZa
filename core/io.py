@@ -119,40 +119,61 @@ def item_type_from_dict(raw: dict[str, Any]) -> ItemType:
 
 
 def job_to_dict(job: Job) -> dict[str, Any]:
-    """Collapse item instances back into ``sku`` + ``qty`` lines per stop."""
+    """Collapse item instances back into ``sku`` + ``qty`` lines per stop.
+
+    Each line carries the ``uid`` of every instance it stands for. Without them
+    a round trip renumbers the items, and since placements refer to items by
+    uid, a plan would silently come to describe different boxes than the ones
+    it was computed for.
+    """
     types: dict[str, ItemType] = {}
-    lines: dict[tuple[str, int], int] = {}
+    lines: dict[tuple[str, int], list[int]] = {}
     for item in job.items:
         types.setdefault(item.type.sku, item.type)
-        key = (item.type.sku, item.stop)
-        lines[key] = lines.get(key, 0) + 1
+        lines.setdefault((item.type.sku, item.stop), []).append(item.uid)
 
     return {
         "job_id": job.job_id,
         "vehicle": vehicle_to_dict(job.vehicle),
         "item_types": [item_type_to_dict(t) for t in types.values()],
         "items": [
-            {"sku": sku, "qty": qty, "stop": stop}
-            for (sku, stop), qty in lines.items()
+            {"sku": sku, "qty": len(uids), "stop": stop, "uids": uids}
+            for (sku, stop), uids in lines.items()
         ],
     }
 
 
 def job_from_dict(raw: dict[str, Any]) -> Job:
+    """Rebuild a job. ``uids`` are honoured when present, assigned when not.
+
+    Hand-written and benchmark-derived job files legitimately omit them; only
+    documents this module produced carry them.
+    """
     inline = {
         entry["sku"]: item_type_from_dict(entry)
         for entry in raw.get("item_types", [])
     }
 
     items: list[Item] = []
-    uid = 0
+    next_uid = 0
     for line in raw["items"]:
         sku = line["sku"]
         item_type = inline.get(sku) or catalog.item_type(sku)
         stop = int(line.get("stop", 1))
-        for _ in range(int(line.get("qty", 1))):
-            items.append(Item(uid=uid, type=item_type, stop=stop))
-            uid += 1
+        uids = line.get("uids")
+        if uids is None:
+            uids = list(range(next_uid, next_uid + int(line.get("qty", 1))))
+        elif len(uids) != int(line.get("qty", len(uids))):
+            raise ValueError(
+                f"{sku}: {len(uids)} uids for a quantity of {line['qty']}"
+            )
+        for uid in uids:
+            items.append(Item(uid=int(uid), type=item_type, stop=stop))
+        next_uid = max(next_uid, max(uids) + 1) if uids else next_uid
+
+    seen = [item.uid for item in items]
+    if len(set(seen)) != len(seen):
+        raise ValueError("duplicate item uids in job document")
 
     return Job(
         job_id=raw["job_id"],

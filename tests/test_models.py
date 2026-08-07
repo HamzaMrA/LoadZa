@@ -99,6 +99,50 @@ def test_job_json_round_trip():
     )
 
 
+def test_job_round_trip_preserves_item_uids():
+    """Placements refer to items by uid, so renumbering would silently retarget
+    a plan at different boxes."""
+    job = generate(vehicle_code="CNT-20DV", mix="mixed", fill=0.4, stops=2, seed=4)
+    restored = job_from_dict(job_to_dict(job))
+    assert {(i.uid, i.sku, i.stop) for i in restored.items} == {
+        (i.uid, i.sku, i.stop) for i in job.items
+    }
+
+
+def test_job_documents_without_uids_still_load():
+    """Hand-written and benchmark-derived files legitimately omit them."""
+    document = {
+        "job_id": "manual",
+        "vehicle": {"code": "CNT-20DV"},
+        "items": [{"sku": "BOX-M", "qty": 3}, {"sku": "BOX-S", "qty": 2}],
+    }
+    job = job_from_dict(document)
+    assert [i.uid for i in job.items] == [0, 1, 2, 3, 4]
+
+
+def test_conflicting_uids_are_rejected():
+    document = {
+        "job_id": "clash",
+        "vehicle": {"code": "CNT-20DV"},
+        "items": [
+            {"sku": "BOX-M", "qty": 2, "uids": [0, 1]},
+            {"sku": "BOX-S", "qty": 2, "uids": [1, 2]},
+        ],
+    }
+    with pytest.raises(ValueError, match="duplicate"):
+        job_from_dict(document)
+
+
+def test_uid_count_must_match_quantity():
+    document = {
+        "job_id": "short",
+        "vehicle": {"code": "CNT-20DV"},
+        "items": [{"sku": "BOX-M", "qty": 5, "uids": [0, 1]}],
+    }
+    with pytest.raises(ValueError, match="uids"):
+        job_from_dict(document)
+
+
 def test_plan_json_round_trip():
     plan = Plan(
         plan_id="p1",

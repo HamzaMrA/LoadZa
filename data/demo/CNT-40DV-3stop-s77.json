@@ -168,112 +168,251 @@
     {
       "sku": "BOX-S",
       "qty": 10,
-      "stop": 1
+      "stop": 1,
+      "uids": [
+        0,
+        3,
+        15,
+        21,
+        33,
+        39,
+        48,
+        81,
+        90,
+        93
+      ]
     },
     {
       "sku": "IND-FULL",
       "qty": 2,
-      "stop": 2
+      "stop": 2,
+      "uids": [
+        1,
+        19
+      ]
     },
     {
       "sku": "EUR-HALF",
       "qty": 6,
-      "stop": 3
+      "stop": 3,
+      "uids": [
+        2,
+        14,
+        23,
+        26,
+        53,
+        92
+      ]
     },
     {
       "sku": "EUR-FULL",
       "qty": 9,
-      "stop": 2
+      "stop": 2,
+      "uids": [
+        4,
+        25,
+        61,
+        64,
+        73,
+        79,
+        85,
+        91,
+        94
+      ]
     },
     {
       "sku": "BOX-L",
       "qty": 4,
-      "stop": 3
+      "stop": 3,
+      "uids": [
+        5,
+        62,
+        80,
+        89
+      ]
     },
     {
       "sku": "BOX-M",
       "qty": 4,
-      "stop": 1
+      "stop": 1,
+      "uids": [
+        6,
+        9,
+        27,
+        78
+      ]
     },
     {
       "sku": "BOX-M",
       "qty": 8,
-      "stop": 2
+      "stop": 2,
+      "uids": [
+        7,
+        10,
+        16,
+        22,
+        40,
+        52,
+        67,
+        70
+      ]
     },
     {
       "sku": "EUR-FULL",
       "qty": 9,
-      "stop": 3
+      "stop": 3,
+      "uids": [
+        8,
+        20,
+        38,
+        41,
+        47,
+        59,
+        68,
+        71,
+        83
+      ]
     },
     {
       "sku": "BOX-S",
       "qty": 7,
-      "stop": 3
+      "stop": 3,
+      "uids": [
+        11,
+        17,
+        35,
+        50,
+        56,
+        74,
+        77
+      ]
     },
     {
       "sku": "EUR-FULL",
       "qty": 6,
-      "stop": 1
+      "stop": 1,
+      "uids": [
+        12,
+        30,
+        36,
+        45,
+        84,
+        87
+      ]
     },
     {
       "sku": "CRATE-FRAGILE",
       "qty": 3,
-      "stop": 2
+      "stop": 2,
+      "uids": [
+        13,
+        49,
+        58
+      ]
     },
     {
       "sku": "EUR-HALF",
       "qty": 2,
-      "stop": 1
+      "stop": 1,
+      "uids": [
+        18,
+        24
+      ]
     },
     {
       "sku": "BOX-L",
       "qty": 3,
-      "stop": 2
+      "stop": 2,
+      "uids": [
+        28,
+        37,
+        88
+      ]
     },
     {
       "sku": "BOX-M",
       "qty": 2,
-      "stop": 3
+      "stop": 3,
+      "uids": [
+        29,
+        44
+      ]
     },
     {
       "sku": "BOX-S",
       "qty": 5,
-      "stop": 2
+      "stop": 2,
+      "uids": [
+        31,
+        34,
+        43,
+        55,
+        82
+      ]
     },
     {
       "sku": "CRATE-FRAGILE",
       "qty": 2,
-      "stop": 3
+      "stop": 3,
+      "uids": [
+        32,
+        65
+      ]
     },
     {
       "sku": "BOX-L",
       "qty": 5,
-      "stop": 1
+      "stop": 1,
+      "uids": [
+        42,
+        54,
+        57,
+        60,
+        69
+      ]
     },
     {
       "sku": "DRUM-200L",
       "qty": 2,
-      "stop": 2
+      "stop": 2,
+      "uids": [
+        46,
+        76
+      ]
     },
     {
       "sku": "CRATE-FRAGILE",
       "qty": 2,
-      "stop": 1
+      "stop": 1,
+      "uids": [
+        51,
+        63
+      ]
     },
     {
       "sku": "DRUM-200L",
       "qty": 2,
-      "stop": 1
+      "stop": 1,
+      "uids": [
+        66,
+        75
+      ]
     },
     {
       "sku": "IND-FULL",
       "qty": 1,
-      "stop": 1
+      "stop": 1,
+      "uids": [
+        72
+      ]
     },
     {
       "sku": "DRUM-200L",
       "qty": 1,
-      "stop": 3
+      "stop": 3,
+      "uids": [
+        86
+      ]
     }
   ]
 }
