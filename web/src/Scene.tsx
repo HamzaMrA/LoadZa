@@ -68,7 +68,13 @@ function Boxes({ placements, selected, onSelect, transparent }: BoxesProps) {
   )
 }
 
-function VehicleShell({ inner }: { inner: { length: number; width: number; height: number } }) {
+function VehicleShell({
+  inner,
+  doorLabel,
+}: {
+  inner: { length: number; width: number; height: number }
+  doorLabel: string
+}) {
   const geometry = useMemo(
     () => new THREE.BoxGeometry(inner.length * MM, inner.height * MM, inner.width * MM),
     [inner.length, inner.width, inner.height],
@@ -95,7 +101,7 @@ function VehicleShell({ inner }: { inner: { length: number; width: number; heigh
         color={INK_MUTED}
         anchorX="center"
       >
-        doors
+        {doorLabel}
       </Text>
     </group>
   )
@@ -160,6 +166,9 @@ interface SceneProps {
   selected: number | null
   onSelect: (uid: number | null) => void
   transparent: boolean
+  /** Passed in rather than read from context: the Canvas is a separate React
+      reconciler, so context from the DOM tree does not cross into it. */
+  doorLabel: string
 }
 
 export default function Scene({
@@ -168,6 +177,7 @@ export default function Scene({
   selected,
   onSelect,
   transparent,
+  doorLabel,
 }: SceneProps) {
   const controls = useRef(null)
   const camera = useThree((state) => state.camera)
@@ -201,7 +211,7 @@ export default function Scene({
       <directionalLight position={[8, 12, 6]} intensity={2.1} />
       <directionalLight position={[-6, 5, -4]} intensity={0.7} />
 
-      <VehicleShell inner={inner} />
+      <VehicleShell inner={inner} doorLabel={doorLabel} />
       <Boxes
         placements={visible}
         selected={selected}

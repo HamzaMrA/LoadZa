@@ -259,6 +259,33 @@ button.ghost {
   margin-left: auto;
 }
 
+.lang {
+  display: flex;
+  border: 1px solid var(--hairline);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.lang button {
+  padding: 0.28rem 0.55rem;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+
+.lang button + button {
+  border-left: 1px solid var(--hairline);
+}
+
+.lang button.on {
+  background: #2a78d6;
+  color: #fff;
+}
+
 .tabs button {
   border-radius: 6px;
   background: transparent;

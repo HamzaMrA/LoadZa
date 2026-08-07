@@ -7,6 +7,14 @@ import JobList from './JobList'
 import { Detail, Legend, Metrics, Verdict } from './Panel'
 import { getCatalog, getPlan } from './api'
 import type { Catalog } from './api'
+import {
+  LanguageContext,
+  displayName,
+  initialLanguage,
+  rememberLanguage,
+  translate,
+} from './i18n'
+import type { Key, Lang } from './i18n'
 import { SURFACE } from './palette'
 import type { Plan } from './types'
 
@@ -18,6 +26,7 @@ const STEP_MS = 90
 type Tab = 'new' | 'jobs' | 'view'
 
 export default function App() {
+  const [lang, setLangState] = useState<Lang>(initialLanguage)
   const [catalog, setCatalog] = useState<Catalog | null>(null)
   const [offline, setOffline] = useState(false)
   const [tab, setTab] = useState<Tab>('view')
@@ -29,6 +38,20 @@ export default function App() {
   const [selected, setSelected] = useState<number | null>(null)
   const [transparent, setTransparent] = useState(false)
   const fileInput = useRef<HTMLInputElement>(null)
+
+  const t = useCallback(
+    (key: Key, vars?: Record<string, string | number>) => translate(lang, key, vars),
+    [lang],
+  )
+  const setLang = useCallback((next: Lang) => {
+    setLangState(next)
+    rememberLanguage(next)
+    document.documentElement.lang = next
+  }, [])
+
+  useEffect(() => {
+    document.documentElement.lang = lang
+  }, [lang])
 
   const load = useCallback((next: Plan) => {
     setPlan(next)
@@ -69,8 +92,11 @@ export default function App() {
         fetch(SAMPLE)
           .then((response) => response.json())
           .then(load)
-          .catch(() => setError('no service reachable and no sample bundled'))
+          .catch(() => setError(translate(lang, 'view.nothing')))
       })
+    // Runs once: re-probing the service because the language changed would be
+    // absurd, so `lang` is deliberately not a dependency.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [load, openPlan])
 
   const total = plan?.placements.length ?? 0
@@ -104,10 +130,11 @@ export default function App() {
     file
       .text()
       .then((text) => load(JSON.parse(text) as Plan))
-      .catch(() => setError(`${file.name} is not a plan document`))
+      .catch(() => setError(t('view.badFile', { name: file.name })))
   }
 
   return (
+    <LanguageContext.Provider value={{ lang, setLang, t }}>
     <div className="app">
       <header>
         <div className="title">
@@ -115,10 +142,11 @@ export default function App() {
           <p>
             {plan ? (
               <>
-                {plan.vehicle.name} · <code>{plan.algorithm}</code>
+                {displayName(lang, plan.vehicle.code, plan.vehicle.name)} ·{' '}
+                <code>{plan.algorithm}</code>
               </>
             ) : (
-              'container loading — build a job, solve it, look at it'
+              t('app.subtitle')
             )}
           </p>
         </div>
@@ -128,28 +156,41 @@ export default function App() {
             className={tab === 'new' ? 'on' : ''}
             onClick={() => setTab('new')}
             disabled={offline}
-            title={offline ? 'needs the service running' : undefined}
+            title={offline ? t('tab.needsService') : undefined}
           >
-            New job
+            {t('tab.new')}
           </button>
           <button
             className={tab === 'jobs' ? 'on' : ''}
             onClick={() => setTab('jobs')}
             disabled={offline}
-            title={offline ? 'needs the service running' : undefined}
+            title={offline ? t('tab.needsService') : undefined}
           >
-            Jobs
+            {t('tab.jobs')}
           </button>
           <button
             className={tab === 'view' ? 'on' : ''}
             onClick={() => setTab('view')}
             disabled={!plan}
           >
-            Plan
+            {t('tab.plan')}
           </button>
         </nav>
 
         {plan && tab === 'view' && <Verdict plan={plan} />}
+
+        <div className="lang" role="group" aria-label="language">
+          {(['en', 'tr'] as Lang[]).map((code) => (
+            <button
+              key={code}
+              className={lang === code ? 'on' : ''}
+              onClick={() => setLang(code)}
+              aria-pressed={lang === code}
+            >
+              {code.toUpperCase()}
+            </button>
+          ))}
+        </div>
       </header>
 
       {error && <p className="error banner">{error}</p>}
@@ -168,7 +209,7 @@ export default function App() {
 
       {tab === 'view' && !plan && (
         <div className="scroller">
-          <p className="hint">loading…</p>
+          <p className="hint">{t('common.loading')}</p>
         </div>
       )}
 
@@ -186,29 +227,31 @@ export default function App() {
                 selected={selected}
                 onSelect={setSelected}
                 transparent={transparent}
+                doorLabel={t('scene.doors')}
               />
             </Canvas>
 
             <aside>
               <Metrics plan={plan} />
               <Legend stops={stops} />
-              <h2>Selection</h2>
+              <h2>{t('view.selection')}</h2>
               <Detail placement={selectedPlacement} vehicle={plan.vehicle} />
               {plan.unplaced.length > 0 && (
                 <>
-                  <h2>Left behind</h2>
+                  <h2>{t('view.leftBehind')}</h2>
                   <p className="hint">
-                    {plan.unplaced.length} items did not fit:{' '}
-                    {[...new Set(plan.unplaced.map((u) => u.reason))].join(', ')}.
+                    {t('view.leftBehindDetail', {
+                      n: plan.unplaced.length,
+                      reasons: [...new Set(plan.unplaced.map((u) => u.reason))].join(', '),
+                    })}
                   </p>
                 </>
               )}
               {offline && (
                 <>
-                  <h2>Demo mode</h2>
+                  <h2>{t('view.demoMode')}</h2>
                   <p className="hint">
-                    No service reachable, so this is the bundled example. Start it
-                    with <code>uvicorn app.api:app</code> to build your own jobs.
+                    {t('view.demoModeDetail', { cmd: 'uvicorn app.api:app' })}
                   </p>
                 </>
               )}
@@ -224,7 +267,11 @@ export default function App() {
               }}
               disabled={total === 0}
             >
-              {playing ? 'Pause' : visible >= total ? 'Replay' : 'Play'}
+              {playing
+                ? t('view.pause')
+                : visible >= total
+                  ? t('view.replay')
+                  : t('view.play')}
             </button>
             <input
               type="range"
@@ -235,21 +282,19 @@ export default function App() {
                 setPlaying(false)
                 setVisible(Number(event.target.value))
               }}
-              aria-label="loading step"
+              aria-label={t('view.step')}
             />
-            <span className="counter">
-              {visible} / {total} loaded
-            </span>
+            <span className="counter">{t('view.loaded', { n: visible, total })}</span>
             <label className="toggle">
               <input
                 type="checkbox"
                 checked={transparent}
                 onChange={(event) => setTransparent(event.target.checked)}
               />
-              see through
+              {t('view.seeThrough')}
             </label>
             <button className="ghost" onClick={() => fileInput.current?.click()}>
-              Open plan…
+              {t('view.openPlan')}
             </button>
             <input
               ref={fileInput}
@@ -262,5 +307,6 @@ export default function App() {
         </>
       )}
     </div>
+    </LanguageContext.Provider>
   )
 }

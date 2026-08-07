@@ -47,6 +47,22 @@ so every pair of fills has to be separable, and only three hues clear that bar
 shade darker, and identity is carried by the legend and the detail panel rather
 than by hue alone.
 
+## Languages
+
+English and Turkish, toggled top right. The choice is remembered in
+`localStorage` and defaults to the browser's preference.
+
+`src/i18n.ts` holds one flat dictionary and a `{name}` substitution. An i18n
+package would bring plural rules and message formats this app has no use for,
+and keeping every string in one typed object means a missing translation is a
+compile error rather than an English phrase surfacing on a Turkish page.
+
+Catalogue names — vehicles and unit loads — are translated in the same file
+rather than by the service. The names the API sends are part of its data, and a
+plan file whose wording changed with the viewer's language would be a poor
+record. Anything not listed there, such as a benchmark-derived box type, falls
+back to the name the service gave.
+
 ## Notes
 
 The bundle is ~350 kB gzipped, nearly all of it three.js. Code-splitting it

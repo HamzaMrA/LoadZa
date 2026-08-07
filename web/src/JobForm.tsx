@@ -2,6 +2,8 @@ import { useMemo, useState } from 'react'
 
 import { createJob, solveJob } from './api'
 import type { Catalog, ItemType, JobLine, SolveOptions } from './api'
+import { displayName, useT } from './i18n'
+import type { Key } from './i18n'
 import { stopColour } from './palette'
 import type { Vehicle } from './types'
 
@@ -31,6 +33,7 @@ export default function JobForm({
   catalog: Catalog
   onSolved: (planId: string) => void
 }) {
+  const { t, lang } = useT()
   const [vehicleCode, setVehicleCode] = useState(catalog.vehicles[0]?.code ?? '')
   const [jobId, setJobId] = useState(() => suggestId(catalog.vehicles[0]?.code ?? 'JOB'))
   const [lines, setLines] = useState<JobLine[]>([
@@ -85,7 +88,7 @@ export default function JobForm({
     setError(null)
     try {
       const usable = lines.filter((line) => line.sku && line.qty > 0)
-      if (usable.length === 0) throw new Error('add at least one item line')
+      if (usable.length === 0) throw new Error(t('form.needLine'))
       await createJob(jobId.trim(), vehicleCode, usable)
       const plan = await solveJob(jobId.trim(), options)
       onSolved(plan.plan_id)
@@ -99,39 +102,43 @@ export default function JobForm({
   return (
     <div className="form">
       <section>
-        <h2>Vehicle</h2>
+        <h2>{t('form.vehicle')}</h2>
         <div className="row">
           <select value={vehicleCode} onChange={(e) => pickVehicle(e.target.value)}>
             {catalog.vehicles.map((v) => (
               <option key={v.code} value={v.code}>
-                {v.name}
+                {displayName(lang, v.code, v.name)}
               </option>
             ))}
           </select>
           <input
             value={jobId}
             onChange={(e) => setJobId(e.target.value)}
-            aria-label="job id"
-            placeholder="job id"
+            aria-label={t('form.jobId')}
+            placeholder={t('form.jobId')}
           />
         </div>
         {vehicle && (
           <p className="hint">
-            {vehicle.inner_mm.length} × {vehicle.inner_mm.width} ×{' '}
-            {vehicle.inner_mm.height} mm · {(capacity / 1e9).toFixed(1)} m³ ·{' '}
-            {(vehicle.max_payload_g / 1e6).toFixed(1)} t payload
+            {t('form.vehicleSpec', {
+              l: vehicle.inner_mm.length,
+              w: vehicle.inner_mm.width,
+              h: vehicle.inner_mm.height,
+              v: (capacity / 1e9).toFixed(1),
+              t: (vehicle.max_payload_g / 1e6).toFixed(1),
+            })}
           </p>
         )}
       </section>
 
       <section>
-        <h2>Cargo</h2>
+        <h2>{t('form.cargo')}</h2>
         <table className="lines">
           <thead>
             <tr>
-              <th>item</th>
-              <th>qty</th>
-              <th>stop</th>
+              <th>{t('form.colItem')}</th>
+              <th>{t('form.colQty')}</th>
+              <th>{t('form.colStop')}</th>
               <th />
             </tr>
           </thead>
@@ -147,13 +154,15 @@ export default function JobForm({
                     >
                       {catalog.item_types.map((t) => (
                         <option key={t.sku} value={t.sku}>
-                          {t.name} ({t.dims_mm.length}×{t.dims_mm.width}×
-                          {t.dims_mm.height})
+                          {displayName(lang, t.sku, t.name)} ({t.dims_mm.length}×
+                          {t.dims_mm.width}×{t.dims_mm.height})
                         </option>
                       ))}
                     </select>
-                    {type?.fragile && <span className="tag">fragile</span>}
-                    {type?.this_side_up && <span className="tag">this side up</span>}
+                    {type?.fragile && <span className="tag">{t('form.fragile')}</span>}
+                    {type?.this_side_up && (
+                      <span className="tag">{t('form.thisSideUp')}</span>
+                    )}
                   </td>
                   <td>
                     <input
@@ -185,7 +194,7 @@ export default function JobForm({
                         setLines((current) => current.filter((_, i) => i !== index))
                       }
                       disabled={lines.length === 1}
-                      aria-label="remove line"
+                      aria-label={t('form.removeLine')}
                     >
                       ×
                     </button>
@@ -204,51 +213,52 @@ export default function JobForm({
             ])
           }
         >
-          + add line
+          {t('form.addLine')}
         </button>
 
         <div className="gauges">
-          <Gauge label="volume" ratio={volumeRatio} note={`${totals.count} items`} />
           <Gauge
-            label="weight"
+            label={t('form.gaugeVolume')}
+            ratio={volumeRatio}
+            note={t('form.nItems', { n: totals.count })}
+          />
+          <Gauge
+            label={t('form.gaugeWeight')}
             ratio={weightRatio}
             note={`${(totals.weight / 1e6).toFixed(2)} t`}
           />
         </div>
         {(volumeRatio > 1 || weightRatio > 1) && (
-          <p className="hint">
-            More cargo than the vehicle holds. That is allowed — the solver packs
-            what fits and reports the rest as left behind.
-          </p>
+          <p className="hint">{t('form.overCapacity')}</p>
         )}
       </section>
 
       <section>
-        <h2>Solver</h2>
+        <h2>{t('form.solver')}</h2>
         <div className="row">
           <label>
-            corner
+            {t('form.corner')}
             <select
               value={options.scorer}
               onChange={(e) => setOptions({ ...options, scorer: e.target.value })}
             >
-              <option value="layer">layer (default)</option>
-              <option value="dbl">deep-left-bottom</option>
-              <option value="contact">max contact</option>
+              <option value="layer">{t('form.cornerLayer')}</option>
+              <option value="dbl">{t('form.cornerDbl')}</option>
+              <option value="contact">{t('form.cornerContact')}</option>
             </select>
           </label>
           <label>
-            search
+            {t('form.search')}
             <select
               value={options.search}
               onChange={(e) => setOptions({ ...options, search: e.target.value })}
             >
-              <option value="first_fit">first fit</option>
-              <option value="best_fit">best fit (slower)</option>
+              <option value="first_fit">{t('form.searchFirst')}</option>
+              <option value="best_fit">{t('form.searchBest')}</option>
             </select>
           </label>
           <label>
-            anneal
+            {t('form.anneal')}
             <select
               value={options.anneal_seconds ?? 0}
               onChange={(e) =>
@@ -258,38 +268,34 @@ export default function JobForm({
                 })
               }
             >
-              <option value={0}>off</option>
-              <option value={5}>5 s</option>
-              <option value={15}>15 s</option>
-              <option value={30}>30 s</option>
+              <option value={0}>{t('form.annealOff')}</option>
+              {[5, 15, 30].map((seconds) => (
+                <option key={seconds} value={seconds}>
+                  {t('form.seconds', { n: seconds })}
+                </option>
+              ))}
             </select>
           </label>
         </div>
         <div className="checks">
-          <Toggle
-            label="delivery reach (K8)"
-            value={options.enforce_lifo}
-            onChange={(v) => setOptions({ ...options, enforce_lifo: v })}
-          />
-          <Toggle
-            label="stacking limits (K5)"
-            value={options.enforce_stacking}
-            onChange={(v) => setOptions({ ...options, enforce_stacking: v })}
-          />
-          <Toggle
-            label="centre the load (K7)"
-            value={options.rebalance}
-            onChange={(v) => setOptions({ ...options, rebalance: v })}
-          />
-          <Toggle
-            label="sideways balance (experimental)"
-            value={options.balance_lateral}
-            onChange={(v) => setOptions({ ...options, balance_lateral: v })}
-          />
+          {(
+            [
+              ['form.k8', 'enforce_lifo'],
+              ['form.k5', 'enforce_stacking'],
+              ['form.k7', 'rebalance'],
+              ['form.lateral', 'balance_lateral'],
+            ] as [Key, keyof SolveOptions][]
+          ).map(([key, field]) => (
+            <Toggle
+              key={field}
+              label={t(key)}
+              value={options[field] as boolean}
+              onChange={(v) => setOptions({ ...options, [field]: v })}
+            />
+          ))}
         </div>
         <p className="hint">
-          Turn a constraint off and solve again to see what it costs — the plans
-          stay side by side under <strong>Jobs</strong>.
+          {t('form.constraintHint', { tab: t('tab.jobs') })}
         </p>
       </section>
 
@@ -298,9 +304,9 @@ export default function JobForm({
       <button className="primary" onClick={submit} disabled={busy}>
         {busy
           ? options.anneal_seconds
-            ? `searching for ${options.anneal_seconds} s…`
-            : 'solving…'
-          : 'Solve and view'}
+            ? t('form.searching', { n: options.anneal_seconds })
+            : t('form.solving')
+          : t('form.submit')}
       </button>
     </div>
   )
