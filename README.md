@@ -9,9 +9,9 @@ constrained 3D bin packing problem. It is NP-hard: there is no practical exact
 solver, so LoadZa combines a constructive heuristic with a metaheuristic
 improvement pass and measures the result against published benchmark data.
 
-> Status: **F6 complete** — constructive solver, constraint enforcement, an
-> independent validator, an annealing pass over item orders, and an HTTP
-> service with SQLite persistence.
+> Status: **F7 complete** — constructive solver, constraint enforcement, an
+> independent validator, an annealing pass over item orders, an HTTP service
+> with SQLite persistence, and a 3D viewer.
 > **82.1% mean volume utilisation across all 700 BR1–BR7 instances**, rising to
 > **83.4% with an 8 second search**, 0 invalid plans throughout.
 > Full numbers in [docs/BENCHMARKS.md](docs/BENCHMARKS.md).
@@ -88,7 +88,7 @@ tools/     command line utilities, synthetic job generator
 tests/     pytest suite
 bench/     OR-Library instance parser and benchmark runner
 app/       FastAPI service and SQLite persistence
-web/       React + three.js viewer                              (F7)
+web/       React + three.js viewer
 data/demo/ generated example jobs
 docs/      notes, screenshots
 ```
@@ -162,11 +162,32 @@ curl localhost:8000/jobs/TIR-1360-mixed-s42/plans     # every plan, best first
 Every stored plan carries the validator's verdict — a plan in the database that
 nobody had checked would be worse than no plan at all.
 
-![Side and top view of a three-stop container load](docs/CNT-40DV-3stop-s77-layer-first_fit.png)
+## Viewer
+
+```bash
+cd web && npm install && npm run dev     # proxies /plans to the API on :8000
+```
+
+![The 3D viewer showing a three-stop container load](docs/viewer-3stop.png)
 
 A three-drop load, coloured by delivery stop. The last stop is packed deepest
-and the first finishes at the doors, so nothing has to be unloaded twice. The
-header line is the validator's verdict, not the solver's own.
+and the first finishes at the doors, so nothing is unloaded twice. Click a box
+for its details; the disc above the roof is the centre of gravity, red here
+because it sits outside the sideways tolerance — the same `K7 ×1` the badge
+reports.
+
+The slider replays the loading order, which is the plan's real output: a
+sequence a person can follow, deep end first and bottom up.
+
+![The viewer part-way through the loading animation](docs/viewer-loading.png)
+
+With no `?plan=` in the query string the page loads a bundled sample, so the
+built bundle is a working demo on a static host with no service behind it.
+More in [web/README.md](web/README.md).
+
+The same plan as a printable schematic, from `python -m tools.view`:
+
+![Side and top view of a three-stop container load](docs/CNT-40DV-3stop-s77-layer-first_fit.png)
 
 Available vehicles: `TIR-1360` (13.6 m curtainside semi-trailer), `CNT-20DV`,
 `CNT-40DV`, `CNT-40HC` (20 ft / 40 ft / 40 ft high cube containers).
@@ -195,7 +216,8 @@ data. Nothing needs a network after that first fetch.
 | F4 | Stacking limits, delivery reach, load balancing | done |
 | F5 | Simulated annealing over item orders | done |
 | F6 | FastAPI service, SQLite persistence | done |
-| F7 | React + three.js viewer with load-order animation | next |
+| F7 | React + three.js viewer with load-order animation | done |
+| F8 | Printable loading plan (PDF) and item list (Excel) | next |
 
 ## Results
 
