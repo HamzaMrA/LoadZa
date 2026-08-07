@@ -32,8 +32,8 @@ from core.extreme_points import POINT_ORDERS, ExtremePoints
 from core.geometry import (
     Box,
     SpatialIndex,
-    box_pos,
     box_dims,
+    box_pos,
     distinct_orientations,
     inside,
     make_box,
@@ -57,11 +57,13 @@ ITEM_ORDERS = {
 }
 
 
-def _score_position(box: Box, index: SpatialIndex, inner: Dims) -> tuple:
+#: All scorers share one signature so they are interchangeable; the positional
+#: ones simply do not need the index or the vehicle.
+def _score_position(box: Box, _index: SpatialIndex, _inner: Dims) -> tuple:
     return (box[0], box[1], box[2])
 
 
-def _score_layer(box: Box, index: SpatialIndex, inner: Dims) -> tuple:
+def _score_layer(box: Box, _index: SpatialIndex, _inner: Dims) -> tuple:
     return (box[2], box[0], box[1])
 
 
@@ -179,7 +181,7 @@ class _LoadState:
 
 
 def _load_delta(
-    index: SpatialIndex, state: _LoadState, supporters: list[tuple[int, int]], weight: Gram
+    state: _LoadState, supporters: list[tuple[int, int]], weight: Gram
 ) -> dict[int, float]:
     """How much extra load each box below would end up carrying.
 
@@ -269,7 +271,7 @@ def _try_item(
 
             delta: dict[int, float] = {}
             if config.enforce_stacking and supporters:
-                delta = _load_delta(index, state, supporters, item.weight_g)
+                delta = _load_delta(state, supporters, item.weight_g)
                 if not _stacking_ok(state, delta):
                     continue
 
@@ -379,7 +381,10 @@ def solve(job: Job, config: SolverConfig | None = None) -> Plan:
         barrier = state.barrier(item.stop) if config.enforce_lifo else 0
         offset = state.lateral_offset(inner)
 
-        def attempt(mirror: bool):
+        # Bound as defaults rather than closed over: the closure only outlives
+        # this iteration by accident, and a late binding here would be a
+        # silent wrong answer rather than a crash.
+        def attempt(mirror: bool, item=item, barrier=barrier):
             return _try_item(
                 item, index, state,
                 pool.ordered(order=config.point_order, limit=config.max_points,

@@ -145,10 +145,7 @@ def improve(job: Job, config: AnnealConfig | None = None) -> AnnealResult:
     # Recover the order the constructive pass used, so the search starts from
     # that sequence rather than from the job's arbitrary input order.
     seed_key = ITEM_ORDERS[config.solver.item_order]
-    if seed_key is None:
-        current = list(job.items)
-    else:
-        current = sorted(job.items, key=seed_key)
+    current = list(job.items) if seed_key is None else sorted(job.items, key=seed_key)
 
     current_score = seed_score
     best_plan = seed_plan
@@ -164,9 +161,11 @@ def improve(job: Job, config: AnnealConfig | None = None) -> AnnealResult:
     temperature = config.start_temp
 
     for step in range(1, steps + 1):
-        if config.time_budget_s is not None:
-            if perf_counter() - started >= config.time_budget_s:
-                break
+        if (
+            config.time_budget_s is not None
+            and perf_counter() - started >= config.time_budget_s
+        ):
+            break
 
         candidate = list(current)
         rng.choices(_MOVE_FUNCS, weights=_MOVE_WEIGHTS, k=1)[0](candidate, rng)

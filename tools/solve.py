@@ -14,8 +14,8 @@ from dataclasses import replace
 from pathlib import Path
 
 from core.io import load_job, save_plan
-from core.solver_ep import ITEM_ORDERS, SCORERS, SolverConfig, solve
 from core.models import Job, Plan
+from core.solver_ep import ITEM_ORDERS, SCORERS, SolverConfig, solve
 from core.validator import ValidationReport, validate
 
 
@@ -34,12 +34,14 @@ def audit(job: Job, plan: Plan) -> tuple[Plan, ValidationReport]:
 def summarise(job: Job, plan: Plan) -> str:
     m = plan.metrics
     assert m is not None
+    capacity_m3 = job.vehicle.inner.volume / 1e9
+    payload_t = job.vehicle.max_payload_g / 1e6
     lines = [
         f"job        {job.job_id}  ({job.vehicle.code}, {len(job.items)} items)",
         f"algorithm  {plan.algorithm}",
         f"placed     {m.placed} / {len(job.items)}",
-        f"volume     {m.volume_utilization:6.1%} of {job.vehicle.inner.volume / 1e9:.1f} m3",
-        f"payload    {m.weight_utilization:6.1%} of {job.vehicle.max_payload_g / 1e6:.1f} t",
+        f"volume     {m.volume_utilization:6.1%} of {capacity_m3:.1f} m3",
+        f"payload    {m.weight_utilization:6.1%} of {payload_t:.1f} t",
         f"cog offset {m.cog_longitudinal_mm:+d} mm lengthwise, "
         f"{m.cog_lateral_mm:+d} mm sideways",
         f"time       {m.solve_ms} ms",

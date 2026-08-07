@@ -19,10 +19,15 @@ import json
 import sqlite3
 from collections.abc import Iterator
 from contextlib import contextmanager
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
-from core.io import item_type_from_dict, item_type_to_dict, vehicle_from_dict, vehicle_to_dict
+from core.io import (
+    item_type_from_dict,
+    item_type_to_dict,
+    vehicle_from_dict,
+    vehicle_to_dict,
+)
 from core.models import (
     Dims,
     Item,
@@ -100,7 +105,7 @@ class NotFound(LookupError):
 
 
 def _now() -> str:
-    return datetime.now(timezone.utc).isoformat(timespec="seconds")
+    return datetime.now(UTC).isoformat(timespec="seconds")
 
 
 class Store:

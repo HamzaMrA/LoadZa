@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import pytest
 
-from core import catalog
 from core.models import (
     Dims,
     Item,

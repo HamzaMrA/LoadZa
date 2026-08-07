@@ -37,8 +37,8 @@ def test_render_writes_a_png(tmp_path):
 
 def test_render_handles_an_empty_plan(tmp_path):
     """A job where nothing fits still has to draw the empty vehicle."""
-    from core.models import Dims, Item, ItemType, Job
     from core import catalog
+    from core.models import Dims, Item, ItemType, Job
     from tools.view import render
 
     huge = ItemType(sku="HUGE", name="huge", dims=Dims(9000, 9000, 9000), weight_g=1000)

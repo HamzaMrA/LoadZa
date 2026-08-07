@@ -8,6 +8,7 @@ from core import catalog
 from core.io import job_from_dict, job_to_dict, plan_from_dict, plan_to_dict
 from core.models import (
     ALL_ORIENTATIONS,
+    UPRIGHT_ORIENTATIONS,
     Dims,
     ItemType,
     Metrics,
@@ -16,7 +17,6 @@ from core.models import (
     Plan,
     Pos,
     Unplaced,
-    UPRIGHT_ORIENTATIONS,
     rotate,
 )
 from core.solver_ep import solve

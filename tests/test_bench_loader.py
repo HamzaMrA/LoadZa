@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from bench.loader import DATASET_DIR, MalformedInstance, SETS, load_set, parse
+from bench.loader import DATASET_DIR, SETS, MalformedInstance, load_set, parse
 from core.models import Orientation
 
 # Two instances in the documented layout. The first box type may only stand on

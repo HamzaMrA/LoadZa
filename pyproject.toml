@@ -6,7 +6,7 @@ requires-python = ">=3.11"
 dependencies = []
 
 [project.optional-dependencies]
-dev = ["pytest>=8.0", "hypothesis>=6.100", "httpx>=0.27"]
+dev = ["pytest>=8.0", "hypothesis>=6.100", "httpx>=0.27", "ruff>=0.6"]
 # Only tools/view.py needs this. core/ stays dependency-free.
 viz = ["matplotlib>=3.8"]
 # Only app/ needs these.
@@ -22,3 +22,25 @@ packages = ["core", "tools", "bench", "app"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["."]
+
+[tool.ruff]
+line-length = 92
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "C4", "SIM", "RET", "ARG", "PTH"]
+ignore = [
+    # Single-letter names are the geometry vocabulary here: l, w, h are the
+    # box dimensions everywhere in the literature and renaming them to
+    # `length_mm` would make the arithmetic harder to read, not easier.
+    "E741",
+]
+
+[tool.ruff.lint.flake8-bugbear]
+# FastAPI's whole dependency mechanism is a call in a default argument.
+extend-immutable-calls = ["fastapi.Depends", "fastapi.Query", "fastapi.Path"]
+
+[tool.ruff.lint.per-file-ignores]
+# Tests take fixtures they do not always use, and assert on values a linter
+# reads as unused.
+"tests/*" = ["ARG001", "ARG002"]

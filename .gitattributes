@@ -1,0 +1,6 @@
+# Normalise to LF in the repository; check out native. Without this every
+# Windows commit rewrites line endings and the diffs are unreadable.
+* text=auto eol=lf
+
+*.png binary
+*.sqlite binary
