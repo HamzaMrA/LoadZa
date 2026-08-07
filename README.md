@@ -1,5 +1,9 @@
 # LoadZa
 
+[![CI](https://github.com/HamzaMrA/LoadZa/actions/workflows/ci.yml/badge.svg)](https://github.com/HamzaMrA/LoadZa/actions/workflows/ci.yml)
+[![Demo](https://img.shields.io/badge/demo-live-2a78d6)](https://hamzamra.github.io/LoadZa/)
+[![Licence](https://img.shields.io/badge/licence-MIT-blue)](LICENSE)
+
 3D container loading optimisation. Given a list of goods and a vehicle, LoadZa
 computes a **physically valid** placement for every box — position, orientation
 and loading order — then visualises it and prints a loading plan.
