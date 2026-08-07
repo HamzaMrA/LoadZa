@@ -4,9 +4,12 @@ Design rules (see Obsidian note "LoadZa - Veri Modeli"):
 
 * All lengths are millimetres and all weights are grams, stored as ``int``.
   Floating point is never used for geometry: overlap tests must be exact.
-* Coordinate system: origin is the rear-left-bottom corner of the vehicle.
-  ``x`` runs along the vehicle length (door -> cab), ``y`` across the width
-  (left -> right), ``z`` upwards.
+* Coordinate system: origin is the front-left-bottom corner of the loading
+  space -- the closed end, furthest from the doors. ``x`` runs along the length
+  towards the doors, ``y`` across the width (left -> right), ``z`` upwards.
+  Placing from the origin outwards therefore fills the deep end first, which is
+  both how a trailer is really loaded and what puts the first delivery stop
+  nearest the doors.
 * Every type is a frozen dataclass. The solver copies and replaces, it never
   mutates in place -- that keeps search backtracking free of aliasing bugs.
 * This module has no dependency on the database, the HTTP layer or numpy.
@@ -77,7 +80,7 @@ class Dims:
 
 @dataclass(frozen=True, slots=True)
 class Pos:
-    """A point in vehicle space, millimetres from the rear-left-bottom corner."""
+    """A point in vehicle space, millimetres from the front-left-bottom corner."""
 
     x: Mm
     y: Mm
@@ -173,6 +176,7 @@ class Placement:
     seq: int
     item_uid: int
     sku: str
+    #: Front-left-bottom corner of the box, in vehicle coordinates.
     pos: Pos
     #: Already rotated: consumers (validator, viewer) must not rotate again.
     dims: Dims
