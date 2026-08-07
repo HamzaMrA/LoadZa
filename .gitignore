@@ -29,3 +29,7 @@ web/dist/
 
 # runtime database
 data/*.sqlite
+
+# Working notes: kept locally, not published.
+docs/BENCHMARKS.md
+web/README.md

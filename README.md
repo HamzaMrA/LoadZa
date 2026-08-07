@@ -11,8 +11,7 @@ improvement pass and measures the result against published benchmark data.
 
 > **82.1% mean volume utilisation across all 700 published BR1–BR7 instances**,
 > rising to **83.4% with an 8 second search**, and not one invalid plan in any
-> run. Numbers, method, and what they do *not* claim:
-> [docs/BENCHMARKS.md](docs/BENCHMARKS.md).
+> run.
 
 ## Why it is not a packing toy
 
@@ -72,11 +71,12 @@ three different kinds of thing:
 
 **K7 is only half solved, and deliberately so.** Translation fixes the
 lengthwise balance whenever there is free length, which in practice is always.
-Sideways there is usually no free width, so the residual lean has to be
-decided during packing — and a greedy side-choice rule measurably makes some
-loads worse while fixing others. `balance_lateral` exists, defaults off, and
-the honest result is written up in [docs/BENCHMARKS.md](docs/BENCHMARKS.md).
-Lateral balance is a job for the F5 global search.
+Sideways there is usually no free width, so the residual lean has to be decided
+during packing — and a greedy side-choice rule measurably makes some loads
+worse while fixing others: on the demo jobs it fixed one (−157 → −1 mm) and
+worsened another (−28 → −129 mm). `balance_lateral` therefore exists and
+defaults off. The code stays so the next person can see it was tried; lateral
+balance belongs to a global search, not a greedy rule.
 
 ## Layout
 
@@ -199,7 +199,8 @@ sequence a person can follow, deep end first and bottom up.
 
 With no `?plan=` in the query string the page loads a bundled sample, so the
 built bundle is a working demo on a static host with no service behind it.
-More in [web/README.md](web/README.md).
+English and Turkish, toggled top right; the choice is remembered and defaults
+to the browser's preference.
 
 The same plan as a printable schematic, from `python -m tools.view`:
 
@@ -290,6 +291,21 @@ data. Nothing needs a network after that first fetch.
 | `layer` (default) | **82.1%** | 161 |
 | `dbl` | 81.6% | 383 |
 
+Per set, `layer`, all 100 instances each:
+
+| Set | Box types | Mean | Min | Max |
+|---|---|---|---|---|
+| BR1 | 3 | 82.0% | 63.9% | 92.6% |
+| BR2 | 5 | 82.3% | 71.2% | 89.9% |
+| BR3 | 8 | 82.7% | 72.5% | 90.1% |
+| BR4 | 10 | 82.3% | 72.1% | 90.2% |
+| BR5 | 12 | 82.4% | 72.8% | 88.6% |
+| BR6 | 15 | 81.9% | 75.3% | 90.2% |
+| BR7 | 20 | 81.2% | 73.5% | 88.1% |
+
+Utilisation drifts down as cargo gets more heterogeneous, which is the expected
+shape: more box types means more awkward gaps.
+
 **With the annealing pass**, on 70 of those instances at 8 seconds each, paired
 against the same instances solved once:
 
@@ -304,9 +320,30 @@ constructive heuristic packed badly, and almost nothing on the ones it already
 packed well. Never-worse is structural — the best-so-far starts at the
 constructive plan.
 
-Per-set figures, the temperature study (annealing is currently
-indistinguishable from hill climbing, and why), and what these numbers do *not*
-claim are in [docs/BENCHMARKS.md](docs/BENCHMARKS.md).
+### What these numbers are not
+
+They are **not** a claim to have reproduced any published result. Comparing
+means against a paper requires matching its constraint set — support,
+stability, orientation freedom and whether every box must be loaded all differ
+between papers, and each costs utilisation. What this harness gives is a figure
+computed on the same instances the literature names, so a comparison can be
+made honestly once a specific paper's assumptions are read off it.
+
+Three findings worth stating plainly:
+
+- **The annealing schedule currently earns nothing.** Four starting
+  temperatures including zero — plain hill climbing — land within 0.05 points
+  of each other, because one evaluation is a full solve and 8 seconds buys
+  20–90 of them. Escaping local optima is a mechanism for thousands of cheap
+  steps, and this is not that regime. It ships because it costs nothing and
+  starts earning the moment evaluation gets cheaper.
+- **So the effort went into evaluation cost.** The spatial index used a fixed
+  1000 mm cell while benchmark containers are 587 units long, which put every
+  box in one bucket and turned the index into a linear scan. Deriving the cell
+  size from the cargo cut the solve from 331 ms to 161 ms with identical plans.
+- **The support rule costs 1.3 points** (81.4% → 80.1% on the same instances).
+  Published results usually do not enforce it, so the headline figures above
+  have it off, matching the benchmark convention.
 
 On the synthetic demo jobs:
 

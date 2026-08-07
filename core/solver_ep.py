@@ -86,7 +86,8 @@ class SolverConfig:
     #: Also selects the candidate ordering when ``search`` is ``first_fit``.
     #: ``layer`` is the default on benchmark evidence: over the 700 BR1-BR7
     #: instances it averages 82.1% against 81.6% for ``dbl``, and it is
-    #: slightly faster. See bench/results and docs/BENCHMARKS.md.
+    #: slightly faster. Reproduce with: python -m bench.run_bench --configs
+    #: default dbl
     scorer: str = "layer"
     #: ``first_fit`` takes the first workable corner, ``best_fit`` scores them
     #: all. Best-fit buys a little utilisation for a lot of time.
