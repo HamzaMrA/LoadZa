@@ -7,6 +7,8 @@ dependencies = []
 
 [project.optional-dependencies]
 dev = ["pytest>=8.0", "hypothesis>=6.100"]
+# Only tools/view.py needs this. core/ stays dependency-free.
+viz = ["matplotlib>=3.8"]
 
 [build-system]
 requires = ["setuptools>=68"]

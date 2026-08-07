@@ -9,10 +9,9 @@ constrained 3D bin packing problem. It is NP-hard: there is no practical exact
 solver, so LoadZa combines a constructive heuristic with a metaheuristic
 improvement pass and measures the result against published benchmark data.
 
-> Status: **F1 complete** — the extreme-point solver runs and enforces
-> K1–K4. Baseline: 80.5% volume utilisation on a 234-item carton load in
-> 152 ms. The independent validator lands in F2, so plans are *not* yet
-> formally verified.
+> Status: **F2 complete** — solver, independent validator and a schematic
+> renderer. Every constraint has a test that breaks it on purpose. Baseline:
+> 80.5% volume utilisation on a 234-item carton load in 152 ms.
 
 ## Why it is not a packing toy
 
@@ -43,6 +42,23 @@ grades its own output hides its bugs.
 
 K1–K3 are hard: violating them makes a plan invalid. K4–K8 are realism
 constraints and may also be handled as penalties.
+
+All eight are checked by `core/validator.py`, which shares no code with the
+solver — it recomputes overlap, support and load transfer from the placement
+coordinates with plain nested loops. A shared helper would let one bug pass
+both the solver and its own audit.
+
+What the solver currently guarantees, and what it does not:
+
+| | K1 | K2 | K3 | K4 | K5 | K6 | K7 | K8 |
+|---|---|---|---|---|---|---|---|---|
+| enforced by the solver | ✓ | ✓ | ✓ | ✓ | | ✓ | | |
+| checked by the validator | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+
+The gaps are real and visible in the output: a three-stop job reports 256 K8
+violations because nothing orders the load by delivery stop yet, and fragile
+crates get crushed because K5 is not a placement constraint until F4. Those
+counts are the specification for the next phase.
 
 ## Layout
 
@@ -85,8 +101,21 @@ python -m tools.gen_demo --vehicle TIR-1360 --mix mixed --fill 1.05 --seed 42
 # solve it
 python -m tools.solve data/demo/TIR-1360-mixed-s42.json
 
+# audit the result, then draw it (needs the viz extra)
+python -m tools.validate data/demo/TIR-1360-mixed-s42.json \
+    data/plans/TIR-1360-mixed-s42-dbl-first_fit.json --explain 5
+python -m tools.view data/demo/TIR-1360-mixed-s42.json \
+    data/plans/TIR-1360-mixed-s42-dbl-first_fit.json
+
 pytest
 ```
+
+![Side and top view of a solved trailer load](docs/TIR-1360-mixed-s42-dbl-first_fit.png)
+
+The picture makes the solver's blind spot obvious: the load stops 2.8 m short
+of the doors and the centre of gravity sits well ahead of the axle line. That
+is what `K7 x1` in the header means, and why a validator that only returned
+"valid / invalid" would not be enough.
 
 Available vehicles: `TIR-1360` (13.6 m curtainside semi-trailer), `CNT-20DV`,
 `CNT-40DV`, `CNT-40HC` (20 ft / 40 ft / 40 ft high cube containers).
@@ -104,9 +133,9 @@ specifications. Benchmark inputs come from the public OR-Library CLP datasets.
 |---|---|---|
 | F0 | Domain model, catalogue, JSON format, job generator | done |
 | F1 | Extreme-point placement heuristic, CLI solver | done |
-| F2 | Independent validator, property-based tests | next |
-| F3 | Benchmark datasets, baseline measurement | |
-| F4 | Realism constraints (K4–K8) | |
+| F2 | Independent validator, property tests, schematic renderer | done |
+| F3 | Benchmark datasets, baseline measurement | next |
+| F4 | Remaining realism constraints (K5, K7, K8) | |
 | F5 | Simulated annealing improvement pass | |
 | F6 | FastAPI service, SQLite persistence | |
 | F7 | React + three.js viewer with load-order animation | |

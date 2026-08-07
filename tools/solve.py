@@ -10,11 +10,25 @@ the report generator (F8) consume.
 from __future__ import annotations
 
 import argparse
+from dataclasses import replace
 from pathlib import Path
 
 from core.io import load_job, save_plan
 from core.solver_ep import ITEM_ORDERS, SCORERS, SolverConfig, solve
 from core.models import Job, Plan
+from core.validator import ValidationReport, validate
+
+
+def audit(job: Job, plan: Plan) -> tuple[Plan, ValidationReport]:
+    """Validate the plan and fold the violation counts into its metrics.
+
+    The solver leaves ``violations`` empty because it is not entitled to grade
+    itself. This is where the numbers actually come from.
+    """
+    report = validate(job, plan)
+    if plan.metrics is None:
+        return plan, report
+    return replace(plan, metrics=replace(plan.metrics, violations=report.counts)), report
 
 
 def summarise(job: Job, plan: Plan) -> str:
@@ -48,6 +62,8 @@ def main() -> None:
     parser.add_argument("--no-support", action="store_true",
                         help="disable the K4 support check (for comparison runs)")
     parser.add_argument("--max-points", type=int, default=400)
+    parser.add_argument("--explain", type=int, default=0, metavar="N",
+                        help="print the first N violations in full")
     parser.add_argument("--out", type=Path, default=None)
     args = parser.parse_args()
 
@@ -59,9 +75,16 @@ def main() -> None:
         enforce_support=not args.no_support,
         max_points=args.max_points,
     )
-    plan = solve(job, config)
+    plan, report = audit(job, solve(job, config))
 
     print(summarise(job, plan))
+    print(f"checks     {report.summary()}")
+    if args.explain:
+        for violation in report.violations[: args.explain]:
+            print(f"           {violation}")
+        if len(report.violations) > args.explain:
+            print(f"           ... and {len(report.violations) - args.explain} more")
+
     out = args.out or Path("data/plans") / f"{plan.plan_id}.json"
     save_plan(plan, out)
     print(f"written to {out}")

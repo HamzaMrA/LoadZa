@@ -1,0 +1,279 @@
+{
+  "job_id": "CNT-40DV-3stop-s77",
+  "vehicle": {
+    "code": "CNT-40DV",
+    "name": "40 ft dry van container",
+    "inner_mm": {
+      "length": 12032,
+      "width": 2352,
+      "height": 2393
+    },
+    "max_payload_g": 26740000,
+    "access": "rear",
+    "cog_lateral_tol_mm": 100,
+    "cog_long_tol_ratio": 0.1,
+    "min_support_ratio": 0.7
+  },
+  "item_types": [
+    {
+      "sku": "BOX-S",
+      "name": "Small carton",
+      "dims_mm": {
+        "length": 400,
+        "width": 300,
+        "height": 300
+      },
+      "weight_g": 7000,
+      "fragile": false,
+      "max_stack_weight_g": 90000,
+      "allowed_orientations": [
+        "LWH",
+        "WLH",
+        "LHW",
+        "HLW",
+        "WHL",
+        "HWL"
+      ],
+      "this_side_up": false
+    },
+    {
+      "sku": "IND-FULL",
+      "name": "Industrial pallet, full height",
+      "dims_mm": {
+        "length": 1200,
+        "width": 1000,
+        "height": 1450
+      },
+      "weight_g": 780000,
+      "fragile": false,
+      "max_stack_weight_g": 700000,
+      "allowed_orientations": [
+        "LWH",
+        "WLH"
+      ],
+      "this_side_up": true
+    },
+    {
+      "sku": "EUR-HALF",
+      "name": "Euro pallet, half height",
+      "dims_mm": {
+        "length": 1200,
+        "width": 800,
+        "height": 750
+      },
+      "weight_g": 310000,
+      "fragile": false,
+      "max_stack_weight_g": 900000,
+      "allowed_orientations": [
+        "LWH",
+        "WLH"
+      ],
+      "this_side_up": true
+    },
+    {
+      "sku": "EUR-FULL",
+      "name": "Euro pallet, full height",
+      "dims_mm": {
+        "length": 1200,
+        "width": 800,
+        "height": 1450
+      },
+      "weight_g": 620000,
+      "fragile": false,
+      "max_stack_weight_g": 600000,
+      "allowed_orientations": [
+        "LWH",
+        "WLH"
+      ],
+      "this_side_up": true
+    },
+    {
+      "sku": "BOX-L",
+      "name": "Large carton",
+      "dims_mm": {
+        "length": 800,
+        "width": 600,
+        "height": 600
+      },
+      "weight_g": 45000,
+      "fragile": false,
+      "max_stack_weight_g": 180000,
+      "allowed_orientations": [
+        "LWH",
+        "WLH",
+        "LHW",
+        "HLW",
+        "WHL",
+        "HWL"
+      ],
+      "this_side_up": false
+    },
+    {
+      "sku": "BOX-M",
+      "name": "Medium carton",
+      "dims_mm": {
+        "length": 600,
+        "width": 400,
+        "height": 400
+      },
+      "weight_g": 18000,
+      "fragile": false,
+      "max_stack_weight_g": 120000,
+      "allowed_orientations": [
+        "LWH",
+        "WLH",
+        "LHW",
+        "HLW",
+        "WHL",
+        "HWL"
+      ],
+      "this_side_up": false
+    },
+    {
+      "sku": "CRATE-FRAGILE",
+      "name": "Fragile glass crate",
+      "dims_mm": {
+        "length": 1150,
+        "width": 750,
+        "height": 1100
+      },
+      "weight_g": 340000,
+      "fragile": true,
+      "max_stack_weight_g": 0,
+      "allowed_orientations": [
+        "LWH",
+        "WLH"
+      ],
+      "this_side_up": true
+    },
+    {
+      "sku": "DRUM-200L",
+      "name": "200 L steel drum",
+      "dims_mm": {
+        "length": 600,
+        "width": 600,
+        "height": 880
+      },
+      "weight_g": 210000,
+      "fragile": false,
+      "max_stack_weight_g": 420000,
+      "allowed_orientations": [
+        "LWH",
+        "WLH"
+      ],
+      "this_side_up": true
+    }
+  ],
+  "items": [
+    {
+      "sku": "BOX-S",
+      "qty": 10,
+      "stop": 1
+    },
+    {
+      "sku": "IND-FULL",
+      "qty": 2,
+      "stop": 2
+    },
+    {
+      "sku": "EUR-HALF",
+      "qty": 6,
+      "stop": 3
+    },
+    {
+      "sku": "EUR-FULL",
+      "qty": 9,
+      "stop": 2
+    },
+    {
+      "sku": "BOX-L",
+      "qty": 4,
+      "stop": 3
+    },
+    {
+      "sku": "BOX-M",
+      "qty": 4,
+      "stop": 1
+    },
+    {
+      "sku": "BOX-M",
+      "qty": 8,
+      "stop": 2
+    },
+    {
+      "sku": "EUR-FULL",
+      "qty": 9,
+      "stop": 3
+    },
+    {
+      "sku": "BOX-S",
+      "qty": 7,
+      "stop": 3
+    },
+    {
+      "sku": "EUR-FULL",
+      "qty": 6,
+      "stop": 1
+    },
+    {
+      "sku": "CRATE-FRAGILE",
+      "qty": 3,
+      "stop": 2
+    },
+    {
+      "sku": "EUR-HALF",
+      "qty": 2,
+      "stop": 1
+    },
+    {
+      "sku": "BOX-L",
+      "qty": 3,
+      "stop": 2
+    },
+    {
+      "sku": "BOX-M",
+      "qty": 2,
+      "stop": 3
+    },
+    {
+      "sku": "BOX-S",
+      "qty": 5,
+      "stop": 2
+    },
+    {
+      "sku": "CRATE-FRAGILE",
+      "qty": 2,
+      "stop": 3
+    },
+    {
+      "sku": "BOX-L",
+      "qty": 5,
+      "stop": 1
+    },
+    {
+      "sku": "DRUM-200L",
+      "qty": 2,
+      "stop": 2
+    },
+    {
+      "sku": "CRATE-FRAGILE",
+      "qty": 2,
+      "stop": 1
+    },
+    {
+      "sku": "DRUM-200L",
+      "qty": 2,
+      "stop": 1
+    },
+    {
+      "sku": "IND-FULL",
+      "qty": 1,
+      "stop": 1
+    },
+    {
+      "sku": "DRUM-200L",
+      "qty": 1,
+      "stop": 3
+    }
+  ]
+}
