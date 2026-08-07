@@ -153,6 +153,7 @@ curl localhost:8000/jobs/TIR-1360-mixed-s42/plans     # every plan, best first
 
 | Endpoint | Does |
 |---|---|
+| `GET /catalog` | Vehicles and unit-load types to build a job from |
 | `POST /jobs` | Store a job document |
 | `POST /jobs/{id}/solve` | Solve or anneal, audit, store, return the metrics |
 | `GET /jobs/{id}/plans` | Compare every plan of a job, best utilisation first |
@@ -162,10 +163,15 @@ curl localhost:8000/jobs/TIR-1360-mixed-s42/plans     # every plan, best first
 Every stored plan carries the validator's verdict — a plan in the database that
 nobody had checked would be worse than no plan at all.
 
-## Viewer
+## Browser workbench
+
+Two terminals, and everything else happens on the page — build a job from the
+catalogue, solve it, look at it, and solve it again with a constraint turned off
+to see what that constraint costs.
 
 ```bash
-cd web && npm install && npm run dev     # proxies /plans to the API on :8000
+uvicorn app.api:app                      # terminal 1, from the repo root
+cd web && npm install && npm run dev     # terminal 2 → http://localhost:5173
 ```
 
 ![The 3D viewer showing a three-stop container load](docs/viewer-3stop.png)

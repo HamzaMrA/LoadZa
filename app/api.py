@@ -30,9 +30,16 @@ from app.schemas import (
     ValidationResponse,
     ViolationOut,
 )
-from core import __version__
+from core import __version__, catalog
 from core.improve_sa import AnnealConfig, improve
-from core.io import job_from_dict, job_to_dict, plan_from_dict, plan_to_dict
+from core.io import (
+    item_type_to_dict,
+    job_from_dict,
+    job_to_dict,
+    plan_from_dict,
+    plan_to_dict,
+    vehicle_to_dict,
+)
 from core.solver_ep import ITEM_ORDERS, SCORERS, SolverConfig, solve
 from core.validator import ALL_CHECKS, validate
 
@@ -52,6 +59,20 @@ def get_store() -> Store:
 @app.get("/health")
 def health() -> dict[str, str]:
     return {"status": "ok", "version": __version__}
+
+
+@app.get("/catalog")
+def read_catalog() -> dict[str, list[dict[str, Any]]]:
+    """Vehicles and unit-load types a client can build a job from.
+
+    Without this a caller has to know the catalogue by heart, which pushed job
+    creation out of the browser and into curl. The UI populates its dropdowns
+    from here.
+    """
+    return {
+        "vehicles": [vehicle_to_dict(v) for v in catalog.VEHICLES.values()],
+        "item_types": [item_type_to_dict(t) for t in catalog.ITEM_TYPES.values()],
+    }
 
 
 @app.get("/jobs", response_model=list[JobSummary])

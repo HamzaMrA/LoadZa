@@ -39,6 +39,30 @@ def test_health():
     assert response.json()["status"] == "ok"
 
 
+def test_catalog_is_enough_to_build_a_job_from(client):
+    """The UI populates its dropdowns from here; without it, job creation can
+    only happen from a shell that already knows the catalogue by heart."""
+    body = client.get("/catalog").json()
+    assert {v["code"] for v in body["vehicles"]} >= {"TIR-1360", "CNT-20DV"}
+    assert {t["sku"] for t in body["item_types"]} >= {"EUR-FULL", "BOX-M"}
+
+    vehicle = next(v for v in body["vehicles"] if v["code"] == "TIR-1360")
+    assert vehicle["inner_mm"]["length"] == 13600
+    assert vehicle["max_payload_g"] > 0
+
+    # A job built purely from catalogue codes has to be accepted.
+    created = client.post(
+        "/jobs",
+        json={
+            "job_id": "from-catalog",
+            "vehicle": {"code": vehicle["code"]},
+            "items": [{"sku": "EUR-FULL", "qty": 4, "stop": 1}],
+        },
+    )
+    assert created.status_code == 201
+    assert client.post("/jobs/from-catalog/solve", json={}).status_code == 200
+
+
 def test_create_read_and_list_a_job(client, job):
     created = client.post("/jobs", json=job_to_dict(job))
     assert created.status_code == 201
