@@ -227,6 +227,21 @@ button.ghost {
   color: var(--ink-2);
 }
 
+.download {
+  padding: 0.4rem 0.75rem;
+  border: 1px solid var(--hairline);
+  border-radius: 6px;
+  background: #fff;
+  font-size: 0.82rem;
+  color: var(--ink-2);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.download:hover {
+  border-color: var(--muted);
+}
+
 .counter,
 .toggle {
   font-size: 0.78rem;

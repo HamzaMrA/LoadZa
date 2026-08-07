@@ -7,8 +7,8 @@ dependencies = []
 
 [project.optional-dependencies]
 dev = ["pytest>=8.0", "hypothesis>=6.100", "httpx>=0.27", "ruff>=0.6"]
-# Only tools/view.py needs this. core/ stays dependency-free.
-viz = ["matplotlib>=3.8"]
+# Drawing and reporting. core/ stays dependency-free.
+viz = ["matplotlib>=3.8", "openpyxl>=3.1"]
 # Only app/ needs these.
 api = ["fastapi>=0.110", "uvicorn>=0.27", "pydantic>=2.6"]
 

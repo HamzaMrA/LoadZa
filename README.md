@@ -158,6 +158,8 @@ curl localhost:8000/jobs/TIR-1360-mixed-s42/plans     # every plan, best first
 | `POST /jobs/{id}/solve` | Solve or anneal, audit, store, return the metrics |
 | `GET /jobs/{id}/plans` | Compare every plan of a job, best utilisation first |
 | `GET /plans/{id}` | The full plan document, as the viewer consumes it |
+| `GET /plans/{id}/report.pdf` | Printable loading plan: drawings and pick list |
+| `GET /plans/{id}/report.xlsx` | The pick list as a spreadsheet |
 | `POST /validate` | Audit any job and plan, including ones from elsewhere |
 
 Every stored plan carries the validator's verdict — a plan in the database that
@@ -195,6 +197,24 @@ The same plan as a printable schematic, from `python -m tools.view`:
 
 ![Side and top view of a three-stop container load](docs/CNT-40DV-3stop-s77-layer-first_fit.png)
 
+## Paperwork
+
+```bash
+python -m tools.report data/demo/job.json data/plans/plan.json
+```
+
+A two-part PDF — the drawings with per-stop totals on page one, then the pick
+list in loading order — and the same list as a spreadsheet with a summary
+sheet. Both are also served straight from the API, and the viewer links to
+them.
+
+[Example loading plan (PDF)](docs/CNT-40DV-3stop-s77-layer-first_fit.pdf)
+
+The PDF is drawn with matplotlib rather than an HTML-to-PDF engine. WeasyPrint
+and its relatives want GTK or Qt native libraries, which turns "clone and run"
+into an afternoon on Windows; matplotlib was already there for the schematic
+and draws the tables too.
+
 Available vehicles: `TIR-1360` (13.6 m curtainside semi-trailer), `CNT-20DV`,
 `CNT-40DV`, `CNT-40HC` (20 ft / 40 ft / 40 ft high cube containers).
 
@@ -223,7 +243,8 @@ data. Nothing needs a network after that first fetch.
 | F5 | Simulated annealing over item orders | done |
 | F6 | FastAPI service, SQLite persistence | done |
 | F7 | React + three.js viewer with load-order animation | done |
-| F8 | Printable loading plan (PDF) and item list (Excel) | next |
+| F8 | Printable loading plan (PDF) and item list (Excel) | done |
+| F9 | Multi-vehicle assignment | next |
 
 ## Results
 

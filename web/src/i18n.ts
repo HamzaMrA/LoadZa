@@ -75,6 +75,8 @@ export const STRINGS = {
   'view.loaded': { en: '{n} / {total} loaded', tr: '{n} / {total} yüklendi' },
   'view.seeThrough': { en: 'see through', tr: 'şeffaf' },
   'view.openPlan': { en: 'Open plan…', tr: 'Plan aç…' },
+  'view.pdf': { en: 'PDF', tr: 'PDF' },
+  'view.xlsx': { en: 'Excel', tr: 'Excel' },
   'view.step': { en: 'loading step', tr: 'yükleme adımı' },
   'view.badFile': {
     en: '{name} is not a plan document',

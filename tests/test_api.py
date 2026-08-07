@@ -191,6 +191,27 @@ def test_validate_endpoint_rejects_a_mismatched_pair(client, job):
     assert response.status_code == 409
 
 
+def test_report_endpoints_return_real_documents(client, job):
+    pytest.importorskip("openpyxl", reason="install the viz extra")
+    client.post("/jobs", json=job_to_dict(job))
+    plan_id = client.post(f"/jobs/{job.job_id}/solve", json={}).json()["plan_id"]
+
+    pdf = client.get(f"/plans/{plan_id}/report.pdf")
+    assert pdf.status_code == 200
+    assert pdf.headers["content-type"] == "application/pdf"
+    assert f'filename="{plan_id}.pdf"' in pdf.headers["content-disposition"]
+    assert pdf.content.startswith(b"%PDF-")
+
+    xlsx = client.get(f"/plans/{plan_id}/report.xlsx")
+    assert xlsx.status_code == 200
+    assert xlsx.content.startswith(b"PK\x03\x04")
+
+
+def test_report_for_an_unknown_plan_is_404(client):
+    assert client.get("/plans/nope/report.pdf").status_code == 404
+    assert client.get("/plans/nope/report.xlsx").status_code == 404
+
+
 def test_unknown_ids_are_404(client):
     assert client.get("/jobs/nope").status_code == 404
     assert client.get("/plans/nope").status_code == 404

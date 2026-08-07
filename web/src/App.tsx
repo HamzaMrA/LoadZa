@@ -293,6 +293,22 @@ export default function App() {
               />
               {t('view.seeThrough')}
             </label>
+            {!offline && (
+              <>
+                <a
+                  className="download"
+                  href={`/plans/${encodeURIComponent(plan.plan_id)}/report.pdf`}
+                >
+                  {t('view.pdf')}
+                </a>
+                <a
+                  className="download"
+                  href={`/plans/${encodeURIComponent(plan.plan_id)}/report.xlsx`}
+                >
+                  {t('view.xlsx')}
+                </a>
+              </>
+            )}
             <button className="ghost" onClick={() => fileInput.current?.click()}>
               {t('view.openPlan')}
             </button>

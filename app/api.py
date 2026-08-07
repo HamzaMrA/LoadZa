@@ -18,7 +18,7 @@ import os
 from dataclasses import replace
 from typing import Any
 
-from fastapi import Depends, FastAPI, HTTPException
+from fastapi import Depends, FastAPI, HTTPException, Response
 from fastapi.responses import JSONResponse
 
 from app.db import NotFound, Store
@@ -185,6 +185,51 @@ def read_plan(plan_id: str, store: Store = Depends(get_store)) -> dict:
         return plan_to_dict(store.load_plan(plan_id))
     except NotFound as error:
         raise HTTPException(404, str(error)) from error
+
+
+XLSX_MEDIA_TYPE = (
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+)
+
+
+def _report(plan_id: str, store: Store, kind: str) -> Response:
+    try:
+        plan = store.load_plan(plan_id)
+        job = store.load_job(plan.job_id)
+    except NotFound as error:
+        raise HTTPException(404, str(error)) from error
+
+    try:
+        from app.report import item_list_xlsx_bytes, loading_plan_pdf_bytes
+    except ImportError as error:  # pragma: no cover - depends on the install
+        raise HTTPException(
+            501, "reporting needs the viz extra: pip install -e '.[viz]'"
+        ) from error
+
+    if kind == "pdf":
+        payload, media, suffix = loading_plan_pdf_bytes(job, plan), "application/pdf", "pdf"
+    else:
+        payload, media, suffix = item_list_xlsx_bytes(job, plan), XLSX_MEDIA_TYPE, "xlsx"
+
+    return Response(
+        content=payload,
+        media_type=media,
+        headers={
+            "content-disposition": f'attachment; filename="{plan.plan_id}.{suffix}"'
+        },
+    )
+
+
+@app.get("/plans/{plan_id}/report.pdf")
+def plan_report_pdf(plan_id: str, store: Store = Depends(get_store)) -> Response:
+    """The printable loading plan: drawings, metrics and the pick list."""
+    return _report(plan_id, store, "pdf")
+
+
+@app.get("/plans/{plan_id}/report.xlsx")
+def plan_report_xlsx(plan_id: str, store: Store = Depends(get_store)) -> Response:
+    """The same pick list as a spreadsheet, with a summary sheet."""
+    return _report(plan_id, store, "xlsx")
 
 
 @app.post("/validate", response_model=ValidationResponse)
