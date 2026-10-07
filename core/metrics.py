@@ -13,7 +13,7 @@ from core.models import Gram, Job, Metrics, Placement, Unplaced
 
 
 def centre_of_gravity(
-    placements: tuple[Placement, ...], weights: dict[int, Gram]
+    placements: tuple[Placement, ...], weights: dict[str, Gram]
 ) -> tuple[int, int, int]:
     """Weighted centroid of the load, in vehicle coordinates."""
     total = 0

@@ -24,8 +24,8 @@ function toScene(x: number, y: number, z: number): [number, number, number] {
 
 interface BoxesProps {
   placements: Placement[]
-  selected: number | null
-  onSelect: (uid: number | null) => void
+  selected: string | null
+  onSelect: (uid: string | null) => void
   transparent: boolean
 }
 
@@ -163,8 +163,8 @@ function CentreOfGravity({ plan }: { plan: Plan }) {
 interface SceneProps {
   plan: Plan
   visibleCount: number
-  selected: number | null
-  onSelect: (uid: number | null) => void
+  selected: string | null
+  onSelect: (uid: string | null) => void
   transparent: boolean
   /** Passed in rather than read from context: the Canvas is a separate React
       reconciler, so context from the DOM tree does not cross into it. */

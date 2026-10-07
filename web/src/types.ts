@@ -19,7 +19,7 @@ export interface Vehicle {
 
 export interface Placement {
   seq: number
-  item_uid: number
+  item_uid: string
   sku: string
   pos_mm: { x: number; y: number; z: number }
   dims_mm: Dims
@@ -39,7 +39,7 @@ export interface Metrics {
 }
 
 export interface Unplaced {
-  item_uid: number
+  item_uid: string
   sku: string
   reason: string
 }

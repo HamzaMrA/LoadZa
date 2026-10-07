@@ -41,7 +41,7 @@ def make_job(types_and_counts, vehicle: Vehicle = SMALL) -> Job:
     uid = 0
     for item_type, count in types_and_counts:
         for _ in range(count):
-            items.append(Item(uid=uid, type=item_type))
+            items.append(Item(uid=str(uid), type=item_type))
             uid += 1
     return Job(job_id="t", vehicle=vehicle, items=tuple(items))
 
@@ -54,7 +54,7 @@ def make_plan(job: Job, boxes) -> Plan:
         placements.append(
             Placement(
                 seq=seq,
-                item_uid=uid,
+                item_uid=str(uid),
                 sku=sku,
                 pos=pos,
                 dims=dims,
@@ -155,7 +155,7 @@ def test_k5_catches_a_crushed_box():
     ])
     violations = validate(job, plan).of("K5")
     assert len(violations) == 1
-    assert violations[0].item_uids == (0,)
+    assert violations[0].item_uids == ("0",)
 
 
 def test_k5_splits_load_between_two_supporters():
@@ -182,7 +182,7 @@ def test_k5_stacks_load_through_a_tower():
     ])
     # The base carries both boxes above it: 800 kg against a 700 kg rating.
     violations = validate(job, plan).of("K5")
-    assert [v.item_uids for v in violations] == [(0,)]
+    assert [v.item_uids for v in violations] == [("0",)]
 
 
 def test_k6_catches_dimensions_that_contradict_the_orientation():

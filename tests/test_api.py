@@ -6,6 +6,8 @@ them and no test depends on the order it runs in.
 
 from __future__ import annotations
 
+import sqlite3
+
 import pytest
 
 pytest.importorskip("fastapi", reason="install the api extra: pip install -e '.[api]'")
@@ -14,7 +16,7 @@ from fastapi.testclient import TestClient  # noqa: E402
 
 from app.api import app  # noqa: E402
 from app.db import NotFound, Store  # noqa: E402
-from core.io import job_to_dict, plan_to_dict  # noqa: E402
+from core.io import job_from_dict, job_to_dict, plan_to_dict  # noqa: E402
 from core.solver_ep import solve  # noqa: E402
 from core.validator import validate  # noqa: E402
 from tools.gen_demo import generate  # noqa: E402
@@ -115,6 +117,97 @@ def test_plan_document_matches_what_the_solver_produced(client, job):
     direct = plan_to_dict(solve(job))
     assert stored["placements"] == direct["placements"]
     assert stored["vehicle"] == direct["vehicle"]
+
+
+def test_external_uids_survive_job_solver_database_and_plan_json(client):
+    guid = "550e8400-e29b-41d4-a716-446655440000"
+    package_id = "PACKAGE-002"
+    document = {
+        "job_id": "external-uids",
+        "vehicle": {"code": "TIR-1360"},
+        "item_types": [
+            {
+                "sku": "TOO-LARGE",
+                "name": "Too large",
+                "dims_mm": {"length": 20_000, "width": 20_000, "height": 20_000},
+                "weight_g": 1_000,
+            }
+        ],
+        "items": [
+            {"sku": "EUR-FULL", "qty": 2, "uids": [guid, "001"]},
+            {"sku": "TOO-LARGE", "qty": 1, "uids": [package_id]},
+        ],
+    }
+
+    assert client.post("/jobs", json=document).status_code == 201
+    returned_job = client.get("/jobs/external-uids").json()
+    returned_uids = [uid for line in returned_job["items"] for uid in line["uids"]]
+    assert returned_uids == [guid, "001", package_id]
+
+    summary = client.post("/jobs/external-uids/solve", json={}).json()
+    plan = client.get(f"/plans/{summary['plan_id']}").json()
+    assert {placement["item_uid"] for placement in plan["placements"]} == {guid, "001"}
+    assert [item["item_uid"] for item in plan["unplaced"]] == [package_id]
+
+
+def test_legacy_integer_uid_columns_migrate_to_text(tmp_path):
+    store = Store(tmp_path / "legacy.sqlite")
+    store.initialise()
+    job = job_from_dict({
+        "job_id": "legacy-uid",
+        "vehicle": {"code": "CNT-20DV"},
+        "items": [{"sku": "BOX-M", "qty": 1, "uids": [0]}],
+    })
+    store.save_job(job)
+    plan = solve(job)
+    store.save_plan(plan)
+
+    with sqlite3.connect(store.path) as connection:
+        connection.execute("DROP INDEX placement_by_plan")
+        connection.execute("ALTER TABLE job_item RENAME TO job_item_text")
+        connection.execute(
+            "CREATE TABLE job_item ("
+            "id INTEGER PRIMARY KEY, job_id TEXT NOT NULL REFERENCES job(id) "
+            "ON DELETE CASCADE, uid INTEGER NOT NULL, "
+            "sku TEXT NOT NULL REFERENCES item_type(sku), stop INTEGER NOT NULL "
+            "DEFAULT 1, UNIQUE (job_id, uid))"
+        )
+        connection.execute(
+            "INSERT INTO job_item SELECT id, job_id, CAST(uid AS INTEGER), sku, stop "
+            "FROM job_item_text"
+        )
+        connection.execute("DROP TABLE job_item_text")
+
+        connection.execute("ALTER TABLE placement RENAME TO placement_text")
+        connection.execute(
+            "CREATE TABLE placement ("
+            "id INTEGER PRIMARY KEY, plan_id TEXT NOT NULL REFERENCES plan(id) "
+            "ON DELETE CASCADE, seq INTEGER NOT NULL, item_uid INTEGER NOT NULL, "
+            "sku TEXT NOT NULL, x INTEGER NOT NULL, y INTEGER NOT NULL, z INTEGER "
+            "NOT NULL, l INTEGER NOT NULL, w INTEGER NOT NULL, h INTEGER NOT NULL, "
+            "orientation TEXT NOT NULL, stop INTEGER NOT NULL DEFAULT 1)"
+        )
+        connection.execute(
+            "INSERT INTO placement SELECT id, plan_id, seq, CAST(item_uid AS INTEGER), "
+            "sku, x, y, z, l, w, h, orientation, stop FROM placement_text"
+        )
+        connection.execute("DROP TABLE placement_text")
+
+    store.initialise()
+
+    assert store.load_job(job.job_id).items[0].uid == "0"
+    assert store.load_plan(plan.plan_id).placements[0].item_uid == "0"
+    with sqlite3.connect(store.path) as connection:
+        types = {
+            table: {
+                row[1]: row[2] for row in connection.execute(
+                    f"PRAGMA table_info({table})"
+                )
+            }
+            for table in ("job_item", "placement")
+        }
+    assert types["job_item"]["uid"].upper() == "TEXT"
+    assert types["placement"]["item_uid"].upper() == "TEXT"
 
 
 def test_solving_twice_with_different_settings_gives_two_comparable_plans(client, job):

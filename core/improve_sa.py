@@ -145,7 +145,17 @@ def improve(job: Job, config: AnnealConfig | None = None) -> AnnealResult:
     # Recover the order the constructive pass used, so the search starts from
     # that sequence rather than from the job's arbitrary input order.
     seed_key = ITEM_ORDERS[config.solver.item_order]
-    current = list(job.items) if seed_key is None else sorted(job.items, key=seed_key)
+    current = (
+        list(job.items)
+        if seed_key is None
+        else [
+            item
+            for _, item in sorted(
+                enumerate(job.items),
+                key=lambda indexed: (seed_key(indexed[1]), indexed[0]),
+            )
+        ]
+    )
 
     current_score = seed_score
     best_plan = seed_plan

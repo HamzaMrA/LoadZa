@@ -2,7 +2,8 @@
 
 The wire format is the contract between the solver, the HTTP layer (F6) and the
 3-D viewer (F7), so it is defined here once and kept boring: plain dicts, plain
-ints, no framework types.
+framework types. UIDs are opaque string identifiers; numeric fields remain
+integers.
 
 A job file may reference catalogue entries by code/sku, or inline a full
 definition. Inline definitions win, which keeps benchmark files (that have their
@@ -126,7 +127,7 @@ def job_to_dict(job: Job) -> dict[str, Any]:
     it was computed for.
     """
     types: dict[str, ItemType] = {}
-    lines: dict[tuple[str, int], list[int]] = {}
+    lines: dict[tuple[str, int], list[str]] = {}
     for item in job.items:
         types.setdefault(item.type.sku, item.type)
         lines.setdefault((item.type.sku, item.stop), []).append(item.uid)
@@ -161,14 +162,15 @@ def job_from_dict(raw: dict[str, Any]) -> Job:
         stop = int(line.get("stop", 1))
         uids = line.get("uids")
         if uids is None:
-            uids = list(range(next_uid, next_uid + int(line.get("qty", 1))))
+            qty = int(line.get("qty", 1))
+            uids = [str(uid) for uid in range(next_uid, next_uid + qty)]
+            next_uid += len(uids)
         elif len(uids) != int(line.get("qty", len(uids))):
             raise ValueError(
                 f"{sku}: {len(uids)} uids for a quantity of {line['qty']}"
             )
         for uid in uids:
-            items.append(Item(uid=int(uid), type=item_type, stop=stop))
-        next_uid = max(next_uid, max(uids) + 1) if uids else next_uid
+            items.append(Item(uid=str(uid), type=item_type, stop=stop))
 
     seen = [item.uid for item in items]
     if len(set(seen)) != len(seen):
@@ -202,7 +204,7 @@ def placement_from_dict(raw: dict[str, Any]) -> Placement:
     pos = raw["pos_mm"]
     return Placement(
         seq=int(raw["seq"]),
-        item_uid=int(raw["item_uid"]),
+        item_uid=str(raw["item_uid"]),
         sku=raw["sku"],
         pos=Pos(x=int(pos["x"]), y=int(pos["y"]), z=int(pos["z"])),
         dims=_dims_from_dict(raw["dims_mm"]),
@@ -261,7 +263,7 @@ def plan_from_dict(raw: dict[str, Any]) -> Plan:
         algorithm=raw["algorithm"],
         placements=tuple(placement_from_dict(p) for p in raw["placements"]),
         unplaced=tuple(
-            Unplaced(item_uid=int(u["item_uid"]), sku=u["sku"], reason=u["reason"])
+            Unplaced(item_uid=str(u["item_uid"]), sku=u["sku"], reason=u["reason"])
             for u in raw.get("unplaced", [])
         ),
         metrics=None if metrics is None else metrics_from_dict(metrics),
