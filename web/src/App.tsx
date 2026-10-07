@@ -35,7 +35,7 @@ export default function App() {
   const [error, setError] = useState<string | null>(null)
   const [visible, setVisible] = useState(0)
   const [playing, setPlaying] = useState(false)
-  const [selected, setSelected] = useState<number | null>(null)
+  const [selected, setSelected] = useState<string | null>(null)
   const [transparent, setTransparent] = useState(false)
   const fileInput = useRef<HTMLInputElement>(null)
 

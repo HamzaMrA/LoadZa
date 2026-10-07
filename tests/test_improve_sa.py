@@ -131,7 +131,7 @@ def test_a_job_that_cannot_be_improved_still_returns_a_plan():
     job = Job(
         job_id="single",
         vehicle=catalog.vehicle("CNT-20DV"),
-        items=(Item(uid=0, type=box),),
+        items=(Item(uid="0", type=box),),
     )
     result = improve(job, AnnealConfig(iterations=10, seed=2))
     assert len(result.plan.placements) == 1

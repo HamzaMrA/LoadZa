@@ -138,7 +138,7 @@ class ItemType:
 class Item:
     """One physical instance of an :class:`ItemType`."""
 
-    uid: int
+    uid: str
     type: ItemType
     #: Delivery stop index, 1-based. Single-drop (always 1) until phase F4.
     stop: int = 1
@@ -174,7 +174,7 @@ class Placement:
     """One box, positioned and oriented inside the vehicle."""
 
     seq: int
-    item_uid: int
+    item_uid: str
     sku: str
     #: Front-left-bottom corner of the box, in vehicle coordinates.
     pos: Pos
@@ -200,7 +200,7 @@ class Placement:
 class Unplaced:
     """An item the solver could not fit, with the reason it gave up."""
 
-    item_uid: int
+    item_uid: str
     sku: str
     reason: str
 

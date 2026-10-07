@@ -125,7 +125,7 @@ def test_reports_survive_a_plan_that_placed_nothing(tmp_path):
     huge = ItemType(sku="HUGE", name="huge", dims=Dims(9000, 9000, 9000), weight_g=1000)
     job = Job(
         job_id="empty", vehicle=catalog.vehicle("CNT-20DV"),
-        items=(Item(uid=0, type=huge),),
+        items=(Item(uid="0", type=huge),),
     )
     plan = solve(job)
     assert plan.placements == ()

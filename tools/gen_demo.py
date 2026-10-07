@@ -82,7 +82,7 @@ def generate(
             ):
                 break
             continue
-        items.append(Item(uid=uid, type=item_type, stop=1 + uid % stops))
+        items.append(Item(uid=str(uid), type=item_type, stop=1 + uid % stops))
         volume += item_type.dims.volume
         weight += item_type.weight_g
         uid += 1

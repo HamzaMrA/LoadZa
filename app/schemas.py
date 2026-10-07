@@ -98,7 +98,7 @@ class ValidationRequest(BaseModel):
 class ViolationOut(BaseModel):
     constraint: str
     detail: str
-    item_uids: list[int] = Field(default_factory=list)
+    item_uids: list[str] = Field(default_factory=list)
 
 
 class ValidationResponse(BaseModel):

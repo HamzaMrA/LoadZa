@@ -46,7 +46,7 @@ def small_jobs(draw: st.DrawFn) -> Job:
     uid = 0
     for item_type in types:
         for _ in range(draw(st.integers(min_value=1, max_value=10))):
-            items.append(Item(uid=uid, type=item_type))
+            items.append(Item(uid=str(uid), type=item_type))
             uid += 1
 
     return Job(job_id="hypothesis", vehicle=vehicle, items=tuple(items))

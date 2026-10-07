@@ -104,7 +104,7 @@ class Instance:
                 allowed_orientations=orientations,
             )
             for _ in range(count):
-                items.append(Item(uid=uid, type=item_type))
+                items.append(Item(uid=str(uid), type=item_type))
                 uid += 1
         return Job(job_id=self.job_id, vehicle=vehicle, items=tuple(items))
 

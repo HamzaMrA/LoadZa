@@ -109,7 +109,7 @@ def single_box_job() -> Job:
     return Job(
         job_id="single",
         vehicle=catalog.vehicle("CNT-20DV"),
-        items=(Item(uid=0, type=box_type),),
+        items=(Item(uid="0", type=box_type),),
     )
 
 
@@ -118,6 +118,23 @@ def test_a_single_box_packs_into_the_deep_left_bottom_corner():
     assert len(plan.placements) == 1
     placement = plan.placements[0]
     assert (placement.pos.x, placement.pos.y, placement.pos.z) == (0, 0, 0)
+
+
+def test_item_order_ties_follow_job_sequence_not_uid_sorting():
+    box_type = ItemType(
+        sku="TIE", name="tie", dims=Dims(1000, 900, 800), weight_g=10_000
+    )
+    first = Item(uid="z-first", type=box_type)
+    second = Item(uid="a-second", type=box_type)
+    job = Job(
+        job_id="tie-order",
+        vehicle=catalog.vehicle("CNT-20DV"),
+        items=(first, second),
+    )
+
+    plan = solve(job, SolverConfig(item_order="as_given", rebalance=False))
+    first_placement = min(plan.placements, key=lambda p: p.pos.x)
+    assert first_placement.item_uid == first.uid
 
 
 def test_rebalancing_slides_a_single_box_to_the_middle_of_the_floor():
@@ -136,7 +153,7 @@ def test_oversized_item_is_reported_not_dropped():
     job = Job(
         job_id="huge",
         vehicle=catalog.vehicle("CNT-20DV"),
-        items=(Item(uid=0, type=huge),),
+        items=(Item(uid="0", type=huge),),
     )
     plan = solve(job)
     assert plan.placements == ()
@@ -150,7 +167,7 @@ def test_payload_limit_is_respected_and_reported():
     job = Job(
         job_id="heavy",
         vehicle=catalog.vehicle("CNT-20DV"),  # 28.23 t payload
-        items=tuple(Item(uid=i, type=heavy) for i in range(3)),
+        items=tuple(Item(uid=str(i), type=heavy) for i in range(3)),
     )
     plan = solve(job)
     assert len(plan.placements) == 1

@@ -61,7 +61,7 @@ CREATE TABLE IF NOT EXISTS job (
 CREATE TABLE IF NOT EXISTS job_item (
     id            INTEGER PRIMARY KEY,
     job_id        TEXT NOT NULL REFERENCES job(id) ON DELETE CASCADE,
-    uid           INTEGER NOT NULL,
+    uid           TEXT NOT NULL,
     sku           TEXT NOT NULL REFERENCES item_type(sku),
     stop          INTEGER NOT NULL DEFAULT 1,
     UNIQUE (job_id, uid)
@@ -87,7 +87,7 @@ CREATE TABLE IF NOT EXISTS placement (
     id            INTEGER PRIMARY KEY,
     plan_id       TEXT NOT NULL REFERENCES plan(id) ON DELETE CASCADE,
     seq           INTEGER NOT NULL,
-    item_uid      INTEGER NOT NULL,
+    item_uid      TEXT NOT NULL,
     sku           TEXT NOT NULL,
     x INTEGER NOT NULL, y INTEGER NOT NULL, z INTEGER NOT NULL,
     l INTEGER NOT NULL, w INTEGER NOT NULL, h INTEGER NOT NULL,
@@ -98,6 +98,35 @@ CREATE TABLE IF NOT EXISTS placement (
 CREATE INDEX IF NOT EXISTS placement_by_plan ON placement(plan_id, seq);
 CREATE INDEX IF NOT EXISTS plan_by_job ON plan(job_id, created_at);
 """
+
+
+def _migrate_uid_column(
+    connection: sqlite3.Connection,
+    table: str,
+    column: str,
+    create_sql: str,
+    columns: tuple[str, ...],
+) -> None:
+    """Rebuild a legacy integer-affinity UID column as TEXT without losing rows."""
+    column_type = next(
+        row["type"]
+        for row in connection.execute(f"PRAGMA table_info({table})")
+        if row["name"] == column
+    )
+    if column_type.upper() == "TEXT":
+        return
+
+    legacy_table = f"{table}_uid_legacy"
+    connection.execute(f"ALTER TABLE {table} RENAME TO {legacy_table}")
+    connection.execute(create_sql)
+    names = ", ".join(columns)
+    selected = ", ".join(
+        f"CAST({name} AS TEXT)" if name == column else name for name in columns
+    )
+    connection.execute(
+        f"INSERT INTO {table} ({names}) SELECT {selected} FROM {legacy_table}"
+    )
+    connection.execute(f"DROP TABLE {legacy_table}")
 
 
 class NotFound(LookupError):
@@ -129,6 +158,36 @@ class Store:
     def initialise(self) -> None:
         with self.connect() as connection:
             connection.executescript(SCHEMA)
+            _migrate_uid_column(
+                connection,
+                "job_item",
+                "uid",
+                "CREATE TABLE job_item ("
+                "id INTEGER PRIMARY KEY, job_id TEXT NOT NULL REFERENCES job(id) "
+                "ON DELETE CASCADE, uid TEXT NOT NULL, sku TEXT NOT NULL "
+                "REFERENCES item_type(sku), stop INTEGER NOT NULL DEFAULT 1, "
+                "UNIQUE (job_id, uid))",
+                ("id", "job_id", "uid", "sku", "stop"),
+            )
+            _migrate_uid_column(
+                connection,
+                "placement",
+                "item_uid",
+                "CREATE TABLE placement ("
+                "id INTEGER PRIMARY KEY, plan_id TEXT NOT NULL REFERENCES plan(id) "
+                "ON DELETE CASCADE, seq INTEGER NOT NULL, item_uid TEXT NOT NULL, "
+                "sku TEXT NOT NULL, x INTEGER NOT NULL, y INTEGER NOT NULL, "
+                "z INTEGER NOT NULL, l INTEGER NOT NULL, w INTEGER NOT NULL, "
+                "h INTEGER NOT NULL, orientation TEXT NOT NULL, "
+                "stop INTEGER NOT NULL DEFAULT 1)",
+                (
+                    "id", "plan_id", "seq", "item_uid", "sku", "x", "y", "z",
+                    "l", "w", "h", "orientation", "stop",
+                ),
+            )
+            connection.execute(
+                "CREATE INDEX IF NOT EXISTS placement_by_plan ON placement(plan_id, seq)"
+            )
 
     # -- jobs ------------------------------------------------------------
 

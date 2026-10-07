@@ -45,7 +45,7 @@ def test_render_handles_an_empty_plan(tmp_path):
     job = Job(
         job_id="empty",
         vehicle=catalog.vehicle("CNT-20DV"),
-        items=(Item(uid=0, type=huge),),
+        items=(Item(uid="0", type=huge),),
     )
     plan = solve(job)
     assert plan.placements == ()

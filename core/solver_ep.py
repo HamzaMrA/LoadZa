@@ -45,11 +45,11 @@ from core.models import Dims, Gram, Item, Job, Orientation, Placement, Plan, Pos
 #: Item sort keys. Bulky-first is the standard opening move: the awkward pieces
 #: get the empty vehicle, and the small ones fill the gaps they leave.
 ITEM_ORDERS = {
-    "volume_desc": lambda it: (-it.type.dims.volume, it.uid),
-    "base_area_desc": lambda it: (-it.type.dims.footprint, -it.type.dims.h, it.uid),
-    "height_desc": lambda it: (-it.type.dims.h, -it.type.dims.volume, it.uid),
-    "weight_desc": lambda it: (-it.type.weight_g, it.uid),
-    "as_given": lambda it: (it.uid,),
+    "volume_desc": lambda it: (-it.type.dims.volume,),
+    "base_area_desc": lambda it: (-it.type.dims.footprint, -it.type.dims.h),
+    "height_desc": lambda it: (-it.type.dims.h, -it.type.dims.volume),
+    "weight_desc": lambda it: (-it.type.weight_g,),
+    "as_given": None,
     #: Take the job's item tuple in the order it arrives. This is the hook the
     #: improvement pass (F5) drives: it searches permutations, so it must be
     #: able to hand one over without the solver re-sorting it away.
@@ -360,18 +360,27 @@ def solve(job: Job, config: SolverConfig | None = None) -> Plan:
     if base_key is None:
         # "sequence": honour the caller's order. Sorting by stop alone is
         # stable, so the given order survives inside each stop.
-        ordered_items = list(job.items)
-        if config.enforce_lifo:
-            ordered_items.sort(key=lambda item: -item.stop)
+        ordered_items = [
+            item
+            for _, item in sorted(
+                enumerate(job.items),
+                key=lambda indexed: (
+                    (-indexed[1].stop, indexed[0])
+                    if config.enforce_lifo else (indexed[0],)
+                ),
+            )
+        ]
     else:
-        if config.enforce_lifo:
-            # Last stop first, so it ends up deepest and the first drop
-            # finishes nearest the doors.
-            def order_key(item: Item):
-                return (-item.stop, *base_key(item))
-        else:
-            order_key = base_key
-        ordered_items = sorted(job.items, key=order_key)
+        # The source position is the deterministic tie-breaker; an external
+        # UID is an identifier, not an ordering key.
+        def order_key(indexed: tuple[int, Item]) -> tuple:
+            index_, item = indexed
+            stop_key = (-item.stop,) if config.enforce_lifo else ()
+            return (*stop_key, *base_key(item), index_)
+
+        ordered_items = [
+            item for _, item in sorted(enumerate(job.items), key=order_key)
+        ]
 
     for item in ordered_items:
         if item.weight_g > remaining_payload:

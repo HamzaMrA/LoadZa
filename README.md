@@ -170,6 +170,30 @@ curl localhost:8000/jobs/TIR-1360-mixed-s42/plans     # every plan, best first
 Every stored plan carries the validator's verdict — a plan in the database that
 nobody had checked would be worse than no plan at all.
 
+### Job item identifiers
+
+In a job document, `sku` identifies an item type and each `uid` identifies one
+physical package. UIDs are opaque strings, so GUID/UUID values and other
+external identifiers are supported. Existing numeric UIDs remain valid and
+are normalized to strings; omitted UIDs are generated as `"0"`, `"1"`, and so
+on.
+
+```json
+{
+  "items": [
+    {
+      "sku": "EUR-FULL",
+      "qty": 2,
+      "stop": 1,
+      "uids": [
+        "550e8400-e29b-41d4-a716-446655440000",
+        "7f8c1b2a-9d34-4e56-b789-123456789abc"
+      ]
+    }
+  ]
+}
+```
+
 ## Browser workbench
 
 Everything happens on the page — build a job from the catalogue, solve it, look

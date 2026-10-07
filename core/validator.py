@@ -37,7 +37,7 @@ ALL_CHECKS: tuple[str, ...] = ("K1", "K2", "K3", "K4", "K5", "K6", "K7", "K8")
 class Violation:
     constraint: str
     detail: str
-    item_uids: tuple[int, ...] = ()
+    item_uids: tuple[str, ...] = ()
 
     def __str__(self) -> str:
         return f"{self.constraint}: {self.detail}"
@@ -202,7 +202,7 @@ def _check_stacking(job: Job, placements: list[Placement]) -> list[Violation]:
     """
     types = {item.uid: item.type for item in job.items}
     weights = {item.uid: float(item.weight_g) for item in job.items}
-    carried: dict[int, float] = {p.item_uid: 0.0 for p in placements}
+    carried: dict[str, float] = {p.item_uid: 0.0 for p in placements}
 
     # Highest first, so a box's own load is final by the time it is passed down.
     for p in sorted(placements, key=lambda q: -q.pos.z):

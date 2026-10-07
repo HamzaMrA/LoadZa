@@ -80,11 +80,14 @@ def test_cargo_no_vehicle_can_take_is_stranded_not_looped():
     job = Job(
         job_id="mixed-feasibility",
         vehicle=catalog.vehicle("CNT-20DV"),
-        items=(Item(uid=0, type=huge), *(Item(uid=i, type=small) for i in range(1, 5))),
+        items=(
+            Item(uid="0", type=huge),
+            *(Item(uid=str(i), type=small) for i in range(1, 5)),
+        ),
     )
     result = assign(job)
     assert result.vehicles_used == 1
-    assert [item.uid for item in result.stranded] == [0]
+    assert [item.uid for item in result.stranded] == ["0"]
 
 
 def test_an_impossible_job_strands_everything_without_a_trip():
@@ -92,7 +95,7 @@ def test_an_impossible_job_strands_everything_without_a_trip():
     job = Job(
         job_id="impossible",
         vehicle=catalog.vehicle("CNT-20DV"),
-        items=(Item(uid=0, type=huge),),
+        items=(Item(uid="0", type=huge),),
     )
     result = assign(job)
     assert result.trips == ()

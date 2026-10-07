@@ -50,7 +50,7 @@ def test_this_side_up_narrows_orientations():
 def test_placement_max_corner():
     p = Placement(
         seq=1,
-        item_uid=0,
+        item_uid="0",
         sku="X",
         pos=Pos(100, 200, 300),
         dims=Dims(1200, 800, 1450),
@@ -118,7 +118,47 @@ def test_job_documents_without_uids_still_load():
         "items": [{"sku": "BOX-M", "qty": 3}, {"sku": "BOX-S", "qty": 2}],
     }
     job = job_from_dict(document)
-    assert [i.uid for i in job.items] == [0, 1, 2, 3, 4]
+    assert [i.uid for i in job.items] == ["0", "1", "2", "3", "4"]
+
+
+def test_numeric_uids_are_normalized_to_strings():
+    document = {
+        "job_id": "numeric-uids",
+        "vehicle": {"code": "CNT-20DV"},
+        "items": [{"sku": "BOX-M", "qty": 3, "uids": [0, 1, 2]}],
+    }
+    assert [item.uid for item in job_from_dict(document).items] == ["0", "1", "2"]
+
+
+@pytest.mark.parametrize(
+    "uids",
+    [
+        ["550e8400-e29b-41d4-a716-446655440000",
+         "7f8c1b2a-9d34-4e56-b789-123456789abc"],
+        ["PACKAGE-001", "PACKAGE-002"],
+    ],
+)
+def test_external_string_uids_are_preserved(uids):
+    document = {
+        "job_id": "external-uids",
+        "vehicle": {"code": "CNT-20DV"},
+        "items": [{"sku": "BOX-M", "qty": 2, "uids": uids}],
+    }
+    assert [item.uid for item in job_from_dict(document).items] == uids
+
+
+def test_explicit_uids_do_not_change_automatic_uid_generation():
+    document = {
+        "job_id": "mixed-uids",
+        "vehicle": {"code": "CNT-20DV"},
+        "items": [
+            {"sku": "BOX-M", "qty": 1, "uids": ["external-id"]},
+            {"sku": "BOX-S", "qty": 2},
+        ],
+    }
+    assert [item.uid for item in job_from_dict(document).items] == [
+        "external-id", "0", "1"
+    ]
 
 
 def test_conflicting_uids_are_rejected():
@@ -131,6 +171,17 @@ def test_conflicting_uids_are_rejected():
         ],
     }
     with pytest.raises(ValueError, match="duplicate"):
+        job_from_dict(document)
+
+
+def test_duplicate_string_uids_are_rejected():
+    duplicate = "550e8400-e29b-41d4-a716-446655440000"
+    document = {
+        "job_id": "duplicate-guid",
+        "vehicle": {"code": "CNT-20DV"},
+        "items": [{"sku": "BOX-M", "qty": 2, "uids": [duplicate, duplicate]}],
+    }
+    with pytest.raises(ValueError, match="duplicate item uids"):
         job_from_dict(document)
 
 
@@ -153,7 +204,7 @@ def test_plan_json_round_trip():
         placements=(
             Placement(
                 seq=1,
-                item_uid=0,
+                item_uid="0",
                 sku="EUR-FULL",
                 pos=Pos(0, 0, 0),
                 dims=Dims(1200, 800, 1450),
@@ -161,7 +212,7 @@ def test_plan_json_round_trip():
                 stop=2,
             ),
         ),
-        unplaced=(Unplaced(item_uid=1, sku="BOX-M", reason="volume"),),
+        unplaced=(Unplaced(item_uid="1", sku="BOX-M", reason="volume"),),
         metrics=Metrics(
             volume_utilization=0.5,
             weight_utilization=0.4,
